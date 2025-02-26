@@ -1,0 +1,24 @@
+.market-button {
+  background-color: var(--color-red);
+  color: var(--color-white);
+  border: none;
+  border-radius: 8px;
+  padding: 16px;
+  font-size: 18px;
+  font-weight: bold;
+  cursor: pointer;
+  width: 100%;
+  text-align: center;
+  transition: background-color 0.2s;
+  margin-top: 16px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.market-button:hover {
+  background-color: #d32f2f; /* Darker red */
+}
+
+.market-button:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(229, 115, 115, 0.5);
+}

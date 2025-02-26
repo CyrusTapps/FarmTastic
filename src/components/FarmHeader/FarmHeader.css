@@ -1,0 +1,59 @@
+.farm-header {
+  background-color: var(--color-green);
+  color: var(--color-white);
+  padding: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.farm-header h1 {
+  margin: 0;
+  font-size: 24px;
+  color: var(--color-white);
+}
+
+.farm-header-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.currency-display {
+  font-size: 18px;
+  font-weight: bold;
+  background-color: rgba(255, 255, 255, 0.2);
+  padding: 8px 16px;
+  border-radius: 4px;
+}
+
+.logout-button {
+  background-color: var(--color-white);
+  color: var(--color-green);
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: background-color 0.2s;
+}
+
+.logout-button:hover {
+  background-color: var(--color-light-gray);
+}
+
+@media (max-width: 768px) {
+  .farm-header {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .farm-header h1 {
+    margin-bottom: 10px;
+  }
+
+  .farm-header-right {
+    flex-direction: column;
+    gap: 8px;
+  }
+}

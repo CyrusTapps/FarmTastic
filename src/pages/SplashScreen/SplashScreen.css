@@ -1,0 +1,119 @@
+.splash-screen {
+  height: 100vh;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: var(--color-green, #4caf50);
+  background-image: url("../../assets/splash_background.jpg");
+  background-size: cover;
+  background-position: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.splash-screen::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 1;
+}
+
+.splash-content {
+  position: relative;
+  z-index: 2;
+  text-align: center;
+  color: white;
+  padding: 20px;
+}
+
+.logo {
+  margin-bottom: 40px;
+  animation: fadeIn 1s ease-in-out;
+}
+
+.logo-letter {
+  font-size: 80px;
+  font-weight: bold;
+  color: var(--color-green, #4caf50);
+  background-color: white;
+  border-radius: 12px;
+  padding: 5px 15px;
+  margin-right: 5px;
+  display: inline-block;
+}
+
+.logo-text {
+  font-size: 50px;
+  font-weight: bold;
+  display: inline-block;
+}
+
+.loading-indicator {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.loading-spinner {
+  width: 50px;
+  height: 50px;
+  border: 5px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  border-top-color: white;
+  animation: spin 1s ease-in-out infinite;
+  margin-bottom: 20px;
+}
+
+.loading-text {
+  font-size: 18px;
+  margin: 0;
+  animation: pulse 1.5s infinite;
+}
+
+.error-text {
+  color: #ffcccc;
+  margin-top: 10px;
+  font-size: 16px;
+  max-width: 300px;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes pulse {
+  0% {
+    opacity: 0.6;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0.6;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.countdown {
+  font-size: 24px;
+  font-weight: bold;
+  margin-top: 15px;
+  color: white;
+}

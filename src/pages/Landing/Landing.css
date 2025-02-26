@@ -1,0 +1,68 @@
+.landing-page {
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-image: url("../../assets/splash_background.jpg");
+  background-size: cover;
+  background-position: center;
+  padding: 1rem;
+}
+
+.landing-content {
+  background-color: rgba(255, 255, 255, 0.9);
+  border-radius: 1rem;
+  padding: 2rem;
+  max-width: 600px;
+  text-align: center;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.tagline {
+  color: var(--color-brown);
+  font-size: 1.2rem;
+  margin-bottom: 2rem;
+}
+
+.cta-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.login-button {
+  background-color: var(--color-green);
+}
+
+.register-button {
+  background-color: var(--color-blue);
+}
+
+.farm-features {
+  text-align: left;
+  border-top: 1px solid var(--color-light-gray);
+  padding-top: 1.5rem;
+}
+
+.farm-features h2 {
+  color: var(--color-green);
+  text-align: center;
+  margin-bottom: 1rem;
+}
+
+.farm-features ul {
+  list-style-type: none;
+  padding: 0;
+}
+
+.farm-features li {
+  padding: 0.5rem 0;
+  display: flex;
+  align-items: center;
+}
+
+.farm-features li::before {
+  content: "🌱";
+  margin-right: 0.5rem;
+}
