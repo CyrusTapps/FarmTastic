@@ -1,0 +1,131 @@
+.transaction-list-container {
+  background-color: #ffffff;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  padding: 20px;
+  margin-bottom: 20px;
+}
+
+.transaction-list-title {
+  color: #333333;
+  font-size: 1.5rem;
+  margin-bottom: 15px;
+}
+
+.transaction-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.transaction-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px;
+  border-radius: 6px;
+  background-color: #f8f9fa;
+  transition: background-color 0.2s;
+}
+
+.transaction-item:hover {
+  background-color: #f0f0f0;
+}
+
+.transaction-date {
+  color: #666666;
+  font-size: 0.9rem;
+  width: 30%;
+}
+
+.transaction-details {
+  flex-grow: 1;
+  color: #333333;
+}
+
+.transaction-type {
+  font-weight: 600;
+  margin-bottom: 4px;
+  color: #333333;
+}
+
+.transaction-item-name {
+  color: #555555;
+  font-size: 0.95rem;
+}
+
+.transaction-amount {
+  font-weight: 600;
+  font-size: 1.1rem;
+  text-align: right;
+}
+
+.transaction-amount.positive {
+  color: #28a745;
+}
+
+.transaction-amount.negative {
+  color: #dc3545;
+}
+
+.no-transactions {
+  color: #666666;
+  text-align: center;
+  padding: 20px;
+  font-style: italic;
+}
+
+.transaction-list-footer {
+  margin-top: 15px;
+  text-align: center;
+}
+
+.view-all-button {
+  display: inline-block;
+  color: #007bff;
+  text-decoration: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+}
+
+.view-all-button:hover {
+  background-color: #f0f0f0;
+  text-decoration: underline;
+}
+
+.transaction-list-loading,
+.transaction-list-error,
+.transaction-list-empty {
+  padding: 20px;
+  text-align: center;
+  color: #666;
+}
+
+.transaction-list-error {
+  color: #d32f2f;
+}
+
+@media (max-width: 768px) {
+  .transaction-list-header,
+  .transaction-item {
+    grid-template-columns: 2fr 1fr 1fr;
+  }
+
+  .transaction-list-header span:nth-child(3),
+  .transaction-item span:nth-child(3) {
+    display: none;
+  }
+}
+
+@media (max-width: 576px) {
+  .transaction-list-header,
+  .transaction-item {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .transaction-list-header span:nth-child(2),
+  .transaction-item span:nth-child(2) {
+    display: none;
+  }
+}
