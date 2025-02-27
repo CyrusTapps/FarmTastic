@@ -176,34 +176,66 @@ animalSchema.virtual("ageInDays").get(function () {
 
 // Virtual for current market value based on health and age
 animalSchema.virtual("marketValue").get(function () {
-  // Base value from the schema
-  let baseValue = this.value;
+  // Get the base purchase price for this animal type
+  const animalPrices = {
+    cat: 100,
+    dog: 150,
+    chicken: 50,
+    cow: 300,
+    horse: 500,
+    pig: 200,
+    sheep: 250,
+    goat: 200,
+  };
 
-  // Health factor (0.5 to 1.0)
-  const healthFactor = 0.5 + this.calculateCurrentHealth() / 200;
+  // Base value is the purchase price
+  const baseValue = animalPrices[this.type] || 100;
 
-  // Age factor - value increases slightly with age up to a point
-  const ageInDays = this.ageInDays;
-  let ageFactor = 1.0;
+  // Calculate age in days (ensure it's accurate)
+  const ageInDays = Math.floor(
+    (new Date() - this.createdAt) / (1000 * 60 * 60 * 24)
+  );
 
-  if (ageInDays < 30) {
-    // Young animals are worth less
-    ageFactor = 0.8 + ageInDays / 150;
-  } else if (ageInDays < 180) {
-    // Prime age animals are worth more
-    ageFactor = 1.0 + ageInDays / 1000;
-  } else {
-    // Older animals slowly decrease in value
-    ageFactor = 1.2 - (ageInDays - 180) / 1000;
+  // Get current health (ensure it's accurate)
+  const currentHealth = this.health; // Use stored health value directly
+
+  // For brand new animals (less than 1 hour old), force value to be 66% of purchase
+  if (new Date() - this.createdAt < 1000 * 60 * 60) {
+    return Math.round(baseValue * 0.66);
   }
 
-  // Ensure age factor doesn't go below 0.7
-  ageFactor = Math.max(0.7, ageFactor);
+  // Initial value is 66% of purchase price
+  let value = baseValue * 0.66;
 
-  // Calculate final value
-  const marketValue = Math.round(baseValue * healthFactor * ageFactor);
+  // Health factor (0.5 to 1.5)
+  const healthFactor = 0.5 + (currentHealth / 100) * 1.0;
 
-  return marketValue;
+  // Age factor - value increases with time owned
+  let ageFactor = 1.0;
+
+  if (ageInDays < 7) {
+    // First week
+    ageFactor = 1.0 + (ageInDays / 7) * 0.35;
+  } else if (ageInDays < 30) {
+    // First month
+    ageFactor = 1.35 + ((ageInDays - 7) / 23) * 0.45;
+  } else if (ageInDays < 60) {
+    // Second month
+    ageFactor = 1.8 + ((ageInDays - 30) / 30) * 0.3;
+  } else {
+    // After 2 months
+    ageFactor = 2.1;
+  }
+
+  // Calculate final value with all factors
+  value = value * healthFactor * ageFactor;
+
+  // Add a small random factor (±5%)
+  const randomFactor = 0.95 + Math.random() * 0.1;
+  value = value * randomFactor;
+
+  // Round to nearest whole number
+  return Math.round(value);
 });
 
 console.log("Animal model initialized");

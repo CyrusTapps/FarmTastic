@@ -12,6 +12,10 @@ import Login from "./pages/Login/Login";
 import Register from "./pages/Register/Register";
 import Dashboard from "./pages/Dashboard/Dashboard";
 import AnimalDetail from "./pages/AnimalDetail/AnimalDetail";
+import Market from "./pages/Market/Market";
+import InventoryDetail from "./pages/InventoryDetail/InventoryDetail";
+import { RefreshProvider } from "./context/RefreshContext";
+import Transactions from "./pages/Transactions/Transactions";
 import "./App.css";
 
 console.log("🔄 Initializing App component...");
@@ -48,33 +52,59 @@ function App() {
   console.log("🔄 App - Rendering main app with routing");
   return (
     <AuthProvider>
-      <Router>
-        <Routes>
-          {/* Public routes */}
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
+      <RefreshProvider>
+        <Router>
+          <Routes>
+            {/* Public routes */}
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
 
-          {/* Protected routes */}
-          <Route
-            path="/dashboard"
-            element={
-              <ProtectedRoute>
-                <Dashboard />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/animal/:id"
-            element={
-              <ProtectedRoute>
-                <AnimalDetail />
-              </ProtectedRoute>
-            }
-          />
-          <Route path="/" element={<Navigate to="/login" replace />} />
-          <Route path="*" element={<Navigate to="/login" replace />} />
-        </Routes>
-      </Router>
+            {/* Protected routes */}
+            <Route
+              path="/dashboard"
+              element={
+                <ProtectedRoute>
+                  <Dashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/animal/:id"
+              element={
+                <ProtectedRoute>
+                  <AnimalDetail />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/inventory/:id"
+              element={
+                <ProtectedRoute>
+                  <InventoryDetail />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/market"
+              element={
+                <ProtectedRoute>
+                  <Market />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/transactions"
+              element={
+                <ProtectedRoute>
+                  <Transactions />
+                </ProtectedRoute>
+              }
+            />
+            <Route path="/" element={<Navigate to="/login" replace />} />
+            <Route path="*" element={<Navigate to="/login" replace />} />
+          </Routes>
+        </Router>
+      </RefreshProvider>
     </AuthProvider>
   );
 }

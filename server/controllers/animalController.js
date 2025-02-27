@@ -75,12 +75,73 @@ exports.createAnimal = async (req, res) => {
     // Add user ID to the animal
     req.body.userId = req.user.id;
 
+    // Set category based on animal type
+    if (
+      req.body.type === "dog" ||
+      req.body.type === "cat" ||
+      req.body.type === "horse"
+    ) {
+      req.body.category = "pet";
+    } else {
+      req.body.category = "livestock";
+    }
+
+    // Get the price from the request body
+    const { price } = req.body;
+    console.log(`Animal purchase - Price: ${price}`);
+
+    // Find the user to check and update currency
+    const user = await User.findById(req.user.id);
+    console.log(
+      `User before purchase - ID: ${user._id}, Currency: ${user.currency}`
+    );
+
+    // Check if user has enough currency
+    if (user.currency < price) {
+      return res.status(400).json({
+        success: false,
+        error: `Not enough currency. Animal costs ${price} coins.`,
+      });
+    }
+
     // Create the animal
     const animal = await Animal.create(req.body);
+    console.log(
+      `Animal created - ID: ${animal._id}, Type: ${animal.type}, Name: ${animal.name}`
+    );
+
+    // Deduct currency from user
+    const oldCurrency = user.currency;
+    user.currency -= price;
+    console.log(`Currency update - Old: ${oldCurrency}, New: ${user.currency}`);
+
+    // Save user with updated currency
+    const savedUser = await user.save();
+    console.log(`User saved - Currency after save: ${savedUser.currency}`);
+
+    // Create transaction record
+    const transaction = await Transaction.create({
+      userId: req.user.id,
+      type: "buy",
+      itemType: "animal",
+      itemId: animal._id,
+      itemName: animal.name || animal.type,
+      amount: price,
+      quantity: 1,
+      description: `Bought ${animal.name || animal.type}`,
+    });
+    console.log(
+      `Transaction created - ID: ${transaction._id}, Amount: ${transaction.amount}`
+    );
 
     res.status(201).json({
       success: true,
-      data: animal,
+      data: {
+        animal,
+        user: {
+          currency: user.currency,
+        },
+      },
     });
   } catch (error) {
     console.error("Error creating animal:", error);
@@ -103,7 +164,7 @@ exports.createAnimal = async (req, res) => {
 // Feed an animal
 exports.feedAnimal = async (req, res) => {
   try {
-    const { inventoryId } = req.body;
+    const { foodId } = req.body;
 
     // Find the animal
     const animal = await Animal.findOne({
@@ -118,27 +179,93 @@ exports.feedAnimal = async (req, res) => {
       });
     }
 
-    // Find the inventory item
-    const inventory = await Inventory.findOne({
-      _id: inventoryId,
+    // Find the food in inventory
+    const foodItem = await Inventory.findOne({
+      _id: foodId,
       userId: req.user.id,
+      quantity: { $gt: 0 },
     });
 
-    if (!inventory) {
-      return res.status(404).json({
+    if (!foodItem) {
+      return res.status(400).json({
         success: false,
-        error: "Inventory item not found",
+        error: "Food not found in your inventory",
       });
     }
 
-    // Use the inventory item on the animal
-    const result = await inventory.useOn(animal);
+    // Check if the food is appropriate for this animal type
+    const validFoodMap = {
+      dog: ["dogFood", "feed", "premium_feed", "treats"],
+      cat: ["catFood", "feed", "premium_feed", "treats"],
+      cow: ["livestockFeed", "feed", "premium_feed"],
+      pig: ["livestockFeed", "feed", "premium_feed"],
+      chicken: ["livestockFeed", "feed", "premium_feed"],
+      horse: ["livestockFeed", "feed", "premium_feed"],
+      sheep: ["livestockFeed", "feed", "premium_feed"],
+    };
+
+    const animalType = animal.type.toLowerCase();
+    const foodType = foodItem.type;
+
+    if (
+      !validFoodMap[animalType] ||
+      !validFoodMap[animalType].includes(foodType)
+    ) {
+      return res.status(400).json({
+        success: false,
+        error: `${animal.name || animal.type} cannot eat ${foodItem.name}`,
+      });
+    }
+
+    // Calculate health boost based on food type
+    let healthBoost = 0;
+    if (foodType === "premium_feed") {
+      healthBoost = 15;
+    } else if (foodType === "treats") {
+      healthBoost = 5;
+    } else {
+      healthBoost = 10; // Regular food
+    }
+
+    // Update animal
+    animal.lastFed = new Date();
+    animal.health = Math.min(100, animal.health + healthBoost);
+    animal.lastCaredAt = new Date();
+    await animal.save();
+
+    // Consume food from inventory
+    foodItem.quantity -= 1;
+
+    // If quantity is 0, remove the item
+    if (foodItem.quantity <= 0) {
+      await Inventory.deleteOne({ _id: foodItem._id });
+    } else {
+      await foodItem.save();
+    }
+
+    // Create transaction record
+    await Transaction.create({
+      userId: req.user.id,
+      type: "use",
+      itemType: "inventory",
+      itemId: foodItem._id,
+      itemName: foodItem.name,
+      amount: 0, // No currency change
+      quantity: 1,
+      description: `Fed ${foodItem.name} to ${animal.name || animal.type}`,
+    });
+
+    // Calculate additional fields for the UI
+    const animalData = animal.toObject ? animal.toObject() : animal;
+    animalData.currentHealth = animal.calculateCurrentHealth();
+    animalData.marketValue = animal.marketValue;
+    animalData.ageInDays = animal.ageInDays;
 
     res.status(200).json({
       success: true,
       data: {
-        animal: result.animal,
-        inventory: result.inventory,
+        animal: animalData,
+        inventory: foodItem.quantity > 0 ? foodItem : null,
       },
     });
   } catch (error) {
@@ -153,7 +280,8 @@ exports.feedAnimal = async (req, res) => {
 // Water an animal
 exports.waterAnimal = async (req, res) => {
   try {
-    // Find the animal
+    const { waterId } = req.body;
+
     const animal = await Animal.findOne({
       _id: req.params.id,
       userId: req.user.id,
@@ -166,27 +294,59 @@ exports.waterAnimal = async (req, res) => {
       });
     }
 
-    // Find water in inventory
-    const water = await Inventory.findOne({
-      type: "water",
-      userId: req.user.id,
-    });
+    // Find water in inventory - either by ID if provided, or by type
+    const waterQuery = waterId
+      ? { _id: waterId, userId: req.user.id, quantity: { $gt: 0 } }
+      : { userId: req.user.id, type: "water", quantity: { $gt: 0 } };
 
-    if (!water || water.quantity < 1) {
+    const waterItem = await Inventory.findOne(waterQuery);
+
+    if (!waterItem) {
       return res.status(400).json({
         success: false,
-        error: "Not enough water in inventory",
+        error: "You don't have any water. Purchase some from the market.",
       });
     }
 
-    // Use water on animal
-    const result = await water.useOn(animal);
+    // Update animal
+    animal.lastWatered = new Date();
+    animal.health = Math.min(100, animal.health + 5);
+    animal.lastCaredAt = new Date();
+    await animal.save();
+
+    // Consume water from inventory
+    waterItem.quantity -= 1;
+
+    // If quantity is 0, remove the item
+    if (waterItem.quantity <= 0) {
+      await Inventory.deleteOne({ _id: waterItem._id });
+    } else {
+      await waterItem.save();
+    }
+
+    // Create transaction record
+    await Transaction.create({
+      userId: req.user.id,
+      type: "use",
+      itemType: "inventory",
+      itemId: waterItem._id,
+      itemName: waterItem.name,
+      amount: 0, // No currency change
+      quantity: 1,
+      description: `Gave water to ${animal.name || animal.type}`,
+    });
+
+    // Calculate additional fields for the UI
+    const animalData = animal.toObject ? animal.toObject() : animal;
+    animalData.currentHealth = animal.calculateCurrentHealth();
+    animalData.marketValue = animal.marketValue;
+    animalData.ageInDays = animal.ageInDays;
 
     res.status(200).json({
       success: true,
       data: {
-        animal: result.animal,
-        inventory: result.inventory,
+        animal: animalData,
+        inventory: waterItem.quantity > 0 ? waterItem : null,
       },
     });
   } catch (error) {
@@ -214,7 +374,7 @@ exports.callVet = async (req, res) => {
       });
     }
 
-    // Find the user to check currency
+    // Find the user to check and update currency
     const user = await User.findById(req.user.id);
 
     // Vet cost is based on animal type
@@ -246,6 +406,18 @@ exports.callVet = async (req, res) => {
     // Call vet for animal
     await animal.callVet();
 
+    // Calculate additional fields for the UI
+    const animalData = animal.toObject ? animal.toObject() : animal;
+    animalData.currentHealth = animal.calculateCurrentHealth();
+    animalData.marketValue = animal.marketValue;
+    animalData.ageInDays = animal.ageInDays;
+
+    console.log("Sending animal data after vet visit:", {
+      currentHealth: animalData.currentHealth,
+      marketValue: animalData.marketValue,
+      ageInDays: animalData.ageInDays,
+    });
+
     // Create transaction record
     await Transaction.create({
       userId: req.user.id,
@@ -260,7 +432,7 @@ exports.callVet = async (req, res) => {
     res.status(200).json({
       success: true,
       data: {
-        animal,
+        animal: animalData,
         user: {
           currency: user.currency,
         },
@@ -278,6 +450,75 @@ exports.callVet = async (req, res) => {
 // Sell an animal
 exports.sellAnimal = async (req, res) => {
   try {
+    console.log(`Selling animal ${req.params.id}...`);
+
+    const animal = await Animal.findOne({
+      _id: req.params.id,
+      userId: req.user.id,
+    });
+
+    if (!animal) {
+      console.log(`Animal ${req.params.id} not found`);
+      return res.status(404).json({
+        success: false,
+        error: "Animal not found",
+      });
+    }
+
+    // Calculate the sale value
+    const saleValue = animal.marketValue;
+    console.log(`Animal ${req.params.id} market value: $${saleValue}`);
+
+    // Update user's currency BEFORE deleting the animal
+    const user = await User.findById(req.user.id);
+    const oldCurrency = user.currency;
+    user.currency += saleValue;
+    await user.save();
+    console.log(
+      `Updated user currency from $${oldCurrency} to $${user.currency}`
+    );
+
+    // Create transaction record
+    await Transaction.create({
+      userId: req.user.id,
+      type: "sell",
+      itemType: "animal",
+      itemId: animal._id,
+      itemName: animal.name || animal.type,
+      amount: saleValue,
+      quantity: 1,
+      description: `Sold ${animal.name || animal.type}`,
+    });
+    console.log(
+      `Created transaction record for selling ${animal.name || animal.type}`
+    );
+
+    // Delete the animal AFTER updating currency and creating transaction
+    await Animal.deleteOne({ _id: animal._id });
+    console.log(`Deleted animal ${req.params.id}`);
+
+    console.log(
+      `Sending success response with amount: $${saleValue}, newCurrency: $${user.currency}`
+    );
+    res.status(200).json({
+      success: true,
+      amount: saleValue,
+      newCurrency: user.currency,
+    });
+  } catch (error) {
+    console.error("Error selling animal:", error);
+    res.status(500).json({
+      success: false,
+      error: error.message || "Server error",
+    });
+  }
+};
+
+// Give medicine to an animal
+exports.giveMedicine = async (req, res) => {
+  try {
+    const { medicineId } = req.body;
+
     // Find the animal
     const animal = await Animal.findOne({
       _id: req.params.id,
@@ -291,42 +532,238 @@ exports.sellAnimal = async (req, res) => {
       });
     }
 
-    // Calculate selling price
-    const sellingPrice = animal.marketValue;
+    // Find the medicine in inventory
+    const medicineItem = await Inventory.findOne({
+      _id: medicineId,
+      userId: req.user.id,
+      quantity: { $gt: 0 },
+    });
 
-    // Find the user to update currency
-    const user = await User.findById(req.user.id);
+    if (!medicineItem) {
+      return res.status(400).json({
+        success: false,
+        error: "Medicine not found in your inventory",
+      });
+    }
 
-    // Add currency to user
-    user.currency += sellingPrice;
-    await user.save();
+    // Apply medicine effects based on type
+    let healthBoost = 0;
+    switch (medicineItem.type) {
+      case "basic_medicine":
+        healthBoost = 20;
+        break;
+      case "medicine": // General Medicine
+        healthBoost = 30;
+        break;
+      case "advanced_medicine":
+        healthBoost = 40;
+        break;
+      default:
+        healthBoost = 15;
+    }
+
+    // Update animal
+    animal.health = Math.min(100, animal.health + healthBoost);
+    animal.isSick = false; // Cure any sickness
+    animal.lastCaredAt = new Date();
+    await animal.save();
+
+    // Consume medicine from inventory
+    medicineItem.quantity -= 1;
+
+    // If quantity is 0, remove the item
+    if (medicineItem.quantity <= 0) {
+      await Inventory.deleteOne({ _id: medicineItem._id });
+    } else {
+      await medicineItem.save();
+    }
 
     // Create transaction record
     await Transaction.create({
       userId: req.user.id,
-      type: "sell",
-      itemType: "animal",
-      itemId: animal._id,
-      itemName: animal.name || animal.type,
-      amount: sellingPrice,
-      quantity: animal.quantity,
-      description: `Sold ${animal.quantity} ${animal.name || animal.type}`,
+      type: "use",
+      itemType: "inventory",
+      itemId: medicineItem._id,
+      itemName: medicineItem.name,
+      amount: 0, // No currency change
+      quantity: 1,
+      description: `Used ${medicineItem.name} on ${animal.name || animal.type}`,
     });
 
-    // Delete the animal
-    await Animal.deleteOne({ _id: animal._id });
+    // Calculate additional fields for the UI
+    const animalData = animal.toObject ? animal.toObject() : animal;
+    animalData.currentHealth = animal.calculateCurrentHealth();
+    animalData.marketValue = animal.marketValue;
+    animalData.ageInDays = animal.ageInDays;
 
     res.status(200).json({
       success: true,
       data: {
-        sellingPrice,
-        user: {
-          currency: user.currency,
-        },
+        animal: animalData,
+        inventory: medicineItem.quantity > 0 ? medicineItem : null,
       },
     });
   } catch (error) {
-    console.error("Error selling animal:", error);
+    console.error("Error giving medicine to animal:", error);
+    res.status(500).json({
+      success: false,
+      error: error.message || "Server error",
+    });
+  }
+};
+
+// Give treats to an animal
+exports.giveTreats = async (req, res) => {
+  try {
+    // Find the animal
+    const animal = await Animal.findOne({
+      _id: req.params.id,
+      userId: req.user.id,
+    });
+
+    if (!animal) {
+      return res.status(404).json({
+        success: false,
+        error: "Animal not found",
+      });
+    }
+
+    // Find treats in inventory
+    const treatsItem = await Inventory.findOne({
+      userId: req.user.id,
+      type: "treats",
+      quantity: { $gt: 0 },
+    });
+
+    if (!treatsItem) {
+      return res.status(400).json({
+        success: false,
+        error: "You don't have any treats. Purchase some from the market.",
+      });
+    }
+
+    // Update animal
+    animal.happiness = Math.min(100, animal.happiness + 15);
+    animal.health = Math.min(100, animal.health + 2); // Small health boost
+    animal.lastCaredAt = new Date();
+    await animal.save();
+
+    // Consume treats from inventory
+    treatsItem.quantity -= 1;
+
+    // If quantity is 0, remove the item
+    if (treatsItem.quantity <= 0) {
+      await Inventory.deleteOne({ _id: treatsItem._id });
+    } else {
+      await treatsItem.save();
+    }
+
+    // Create transaction record
+    await Transaction.create({
+      userId: req.user.id,
+      type: "use",
+      itemType: "inventory",
+      itemId: treatsItem._id,
+      itemName: treatsItem.name,
+      amount: 0, // No currency change
+      quantity: 1,
+      description: `Gave treats to ${animal.name || animal.type}`,
+    });
+
+    // Calculate additional fields for the UI
+    const animalData = animal.toObject ? animal.toObject() : animal;
+    animalData.currentHealth = animal.calculateCurrentHealth();
+    animalData.marketValue = animal.marketValue;
+    animalData.ageInDays = animal.ageInDays;
+
+    res.status(200).json({
+      success: true,
+      data: {
+        animal: animalData,
+        inventory: treatsItem.quantity > 0 ? treatsItem : null,
+      },
+    });
+  } catch (error) {
+    console.error("Error giving treats to animal:", error);
+    res.status(500).json({
+      success: false,
+      error: error.message || "Server error",
+    });
+  }
+};
+
+// Give vitamins to an animal
+exports.giveVitamins = async (req, res) => {
+  try {
+    // Find the animal
+    const animal = await Animal.findOne({
+      _id: req.params.id,
+      userId: req.user.id,
+    });
+
+    if (!animal) {
+      return res.status(404).json({
+        success: false,
+        error: "Animal not found",
+      });
+    }
+
+    // Find vitamins in inventory
+    const vitaminsItem = await Inventory.findOne({
+      userId: req.user.id,
+      type: "vitamins",
+      quantity: { $gt: 0 },
+    });
+
+    if (!vitaminsItem) {
+      return res.status(400).json({
+        success: false,
+        error: "You don't have any vitamins. Purchase some from the market.",
+      });
+    }
+
+    // Update animal
+    animal.health = Math.min(100, animal.health + 10);
+    animal.lastCaredAt = new Date();
+    await animal.save();
+
+    // Consume vitamins from inventory
+    vitaminsItem.quantity -= 1;
+
+    // If quantity is 0, remove the item
+    if (vitaminsItem.quantity <= 0) {
+      await Inventory.deleteOne({ _id: vitaminsItem._id });
+    } else {
+      await vitaminsItem.save();
+    }
+
+    // Create transaction record
+    await Transaction.create({
+      userId: req.user.id,
+      type: "use",
+      itemType: "inventory",
+      itemId: vitaminsItem._id,
+      itemName: vitaminsItem.name,
+      amount: 0, // No currency change
+      quantity: 1,
+      description: `Gave vitamins to ${animal.name || animal.type}`,
+    });
+
+    // Calculate additional fields for the UI
+    const animalData = animal.toObject ? animal.toObject() : animal;
+    animalData.currentHealth = animal.calculateCurrentHealth();
+    animalData.marketValue = animal.marketValue;
+    animalData.ageInDays = animal.ageInDays;
+
+    res.status(200).json({
+      success: true,
+      data: {
+        animal: animalData,
+        inventory: vitaminsItem.quantity > 0 ? vitaminsItem : null,
+      },
+    });
+  } catch (error) {
+    console.error("Error giving vitamins to animal:", error);
     res.status(500).json({
       success: false,
       error: error.message || "Server error",

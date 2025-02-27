@@ -17,9 +17,9 @@ This is the backend server for the FarmTastic farm management game.
    PORT=5000
    MONGO_URI=mongodb://localhost:27017/farmtastic
    JWT_SECRET=your_jwt_secret_key_here
-   JWT_EXPIRE=15m
+   JWT_EXPIRE=1h
    REFRESH_TOKEN_SECRET=your_refresh_token_secret_here
-   REFRESH_TOKEN_EXPIRE=7d
+   REFRESH_TOKEN_EXPIRE=3d
    CLIENT_URL=http://localhost:5173
    ```
 
@@ -61,6 +61,88 @@ This is the backend server for the FarmTastic farm management game.
 - `GET /api/health` - Check if the server is running
   - Response: `{ status: 'ok', message: 'Server is running' }`
 
+### Animals
+
+- `GET /api/animals` - Get all animals for the current user (protected route)
+
+  - Requires Authorization header with Bearer token
+  - Response: Array of animal objects
+
+- `GET /api/animals/:id` - Get a specific animal by ID (protected route)
+
+  - Requires Authorization header with Bearer token
+  - Response: Animal object
+
+- `POST /api/animals` - Create a new animal (protected route)
+
+  - Requires Authorization header with Bearer token
+  - Request body: `{ type, name, category, price }`
+  - Response: `{ success: true, animal: { ... }, user: { ... } }`
+
+- `PUT /api/animals/:id` - Update an animal (protected route)
+
+  - Requires Authorization header with Bearer token
+  - Request body: Animal properties to update
+  - Response: Updated animal object
+
+- `DELETE /api/animals/:id` - Delete an animal (protected route)
+
+  - Requires Authorization header with Bearer token
+  - Response: `{ success: true, message: "Animal deleted" }`
+
+- `POST /api/animals/:id/feed` - Feed an animal (protected route)
+
+  - Requires Authorization header with Bearer token
+  - Response: Updated animal object
+
+- `POST /api/animals/:id/water` - Water an animal (protected route)
+
+  - Requires Authorization header with Bearer token
+  - Response: Updated animal object
+
+- `POST /api/animals/:id/vet` - Call vet for an animal (protected route)
+  - Requires Authorization header with Bearer token
+  - Response: Updated animal object
+
+### Inventory
+
+- `GET /api/inventory` - Get all inventory items for the current user (protected route)
+
+  - Requires Authorization header with Bearer token
+  - Response: Array of inventory objects
+
+- `GET /api/inventory/:id` - Get a specific inventory item by ID (protected route)
+
+  - Requires Authorization header with Bearer token
+  - Response: Inventory object
+
+- `POST /api/inventory/buy` - Buy an inventory item (protected route)
+
+  - Requires Authorization header with Bearer token
+  - Request body: `{ type, quantity }`
+  - Response: `{ success: true, inventory: { ... }, user: { ... } }`
+
+- `POST /api/inventory/:id/use/:animalId` - Use an inventory item on an animal (protected route)
+
+  - Requires Authorization header with Bearer token
+  - Request body: `{ amount }` (optional, defaults to 1)
+  - Response: `{ success: true, inventory: { ... }, animal: { ... } }`
+
+- `DELETE /api/inventory/:id` - Delete an inventory item (protected route)
+  - Requires Authorization header with Bearer token
+  - Response: `{ success: true, message: "Inventory item deleted" }`
+
+### Transactions
+
+- `GET /api/transactions` - Get all transactions for the current user (protected route)
+
+  - Requires Authorization header with Bearer token
+  - Response: Array of transaction objects
+
+- `GET /api/transactions/:id` - Get a specific transaction by ID (protected route)
+  - Requires Authorization header with Bearer token
+  - Response: Transaction object
+
 ## API Response Format
 
 The API follows a consistent response format:
@@ -99,21 +181,98 @@ The API follows a consistent response format:
 ```
 server/
 ├── config/
-│   └── db.js             # Database connection configuration
+│   └── db.js                  # Database connection configuration
 ├── controllers/
-│   └── authController.js # Authentication controller functions
+│   ├── authController.js      # Authentication controller functions
+│   ├── animalController.js    # Animal management controller functions
+│   └── inventoryController.js # Inventory management controller functions
 ├── middleware/
 │   ├── authMiddleware.js      # JWT authentication middleware
 │   └── rateLimitMiddleware.js # Rate limiting middleware
 ├── models/
-│   └── userModel.js      # User model with schema definition
+│   ├── userModel.js           # User model with schema definition
+│   ├── animalModel.js         # Animal model with schema definition
+│   ├── inventoryModel.js      # Inventory model with schema definition
+│   └── transactionModel.js    # Transaction model with schema definition
 ├── routes/
-│   └── authRoutes.js     # Authentication routes
+│   ├── authRoutes.js          # Authentication routes
+│   ├── animalRoutes.js        # Animal management routes
+│   └── inventoryRoutes.js     # Inventory management routes
 ├── utils/
-│   └── jwtUtils.js       # JWT token utilities
-├── .env                  # Environment variables (create this file)
-├── package.json          # Project dependencies and scripts
-└── server.js             # Main server entry point
+│   └── jwtUtils.js            # JWT token utilities
+├── .env                       # Environment variables (create this file)
+├── package.json               # Project dependencies and scripts
+└── server.js                  # Main server entry point
+```
+
+## Models
+
+### User Model
+
+```javascript
+{
+  username: String,       // Required, unique, 3-20 chars
+  email: String,          // Required, unique, valid email format
+  password: String,       // Required, min 8 chars, hashed with bcrypt
+  farmName: String,       // Default: "{username}'s Farm"
+  currency: Number,       // Default: 1000
+  role: String,           // "user" or "admin", default: "user"
+  lastLogin: Date,        // Default: Date.now
+  createdAt: Date,        // Default: Date.now
+  updatedAt: Date         // Default: Date.now
+}
+```
+
+### Animal Model
+
+```javascript
+{
+  userId: ObjectId,       // Reference to User model
+  name: String,           // Required for pets, optional for livestock
+  type: String,           // Required, enum: ["dog", "cat", "cow", "pig", "chicken", "horse", "sheep", "goat"]
+  category: String,       // Required, enum: ["pet", "livestock"]
+  quantity: Number,       // Default: 1, for livestock can be > 1
+  health: Number,         // 0-100, default: 100
+  lastFed: Date,          // Default: Date.now
+  lastWatered: Date,      // Default: Date.now
+  lastCaredAt: Date,      // Default: Date.now
+  createdAt: Date,        // Default: Date.now
+  imageUrl: String        // URL to animal image
+}
+```
+
+### Inventory Model
+
+```javascript
+{
+  userId: ObjectId,       // Reference to User model
+  type: String,           // Required, enum: ["dogFood", "catFood", "livestockFeed", "water", "medicine", "treats"]
+  name: String,           // Required
+  quantity: Number,       // Required, min: 0, default: 0
+  unit: String,           // Required, enum: ["lbs", "gallons", "units"], default: "units"
+  price: Number,          // Required, min: 0
+  imageUrl: String,       // URL to inventory image
+  affectsAnimalTypes: [String], // Array of animal types this item can be used on
+  healthEffect: Number,   // Health points added when used
+  createdAt: Date,        // Default: Date.now
+  updatedAt: Date         // Default: Date.now
+}
+```
+
+### Transaction Model
+
+```javascript
+{
+  userId: ObjectId,       // Reference to User model
+  type: String,           // Required, enum: ["buy", "sell", "vet"]
+  itemType: String,       // Required, enum: ["animal", "inventory"]
+  itemId: ObjectId,       // Reference to either Animal or Inventory
+  itemName: String,       // Required
+  amount: Number,         // Required
+  quantity: Number,       // Default: 1, min: 1
+  description: String,    // Optional
+  createdAt: Date         // Default: Date.now
+}
 ```
 
 ## Security Features
@@ -124,6 +283,7 @@ server/
 - HTTP-only cookies for refresh tokens
 - Helmet for security headers
 - CORS configuration
+- Token expiration (1h for access token, 3d for refresh token)
 
 ## Development Features
 
@@ -183,9 +343,38 @@ You can test the API endpoints using tools like Postman or Insomnia:
    ```
 
 3. Access protected route with the received token:
+
    ```
    GET http://localhost:5000/api/auth/me
    Authorization: Bearer <your_access_token>
+   ```
+
+4. Create a new animal:
+
+   ```
+   POST http://localhost:5000/api/animals
+   Authorization: Bearer <your_access_token>
+   Content-Type: application/json
+
+   {
+     "type": "dog",
+     "name": "Buddy",
+     "category": "pet",
+     "price": 100
+   }
+   ```
+
+5. Buy an inventory item:
+
+   ```
+   POST http://localhost:5000/api/inventory/buy
+   Authorization: Bearer <your_access_token>
+   Content-Type: application/json
+
+   {
+     "type": "dogFood",
+     "quantity": 2
+   }
    ```
 
 ## Frontend Integration Notes
@@ -196,6 +385,9 @@ When integrating with the frontend:
 2. The user object is directly in the response (not nested under a `data` property)
 3. All authentication requests should include the token in the Authorization header as `Bearer <token>`
 4. For protected routes, ensure the token is included in every request
+5. When purchasing animals, ensure the correct category is specified:
+   - "pet" for dogs and cats
+   - "livestock" for cows, pigs, chickens, horses, sheep, and goats
 
 ## Deployment
 
@@ -214,12 +406,6 @@ For production deployment:
    npm start
    ```
 
-## Future Endpoints (Planned)
-
-- Animal management endpoints
-- Inventory management endpoints
-- Farm statistics endpoints
-
 ## Troubleshooting
 
 If you encounter connection issues:
@@ -231,7 +417,10 @@ If you encounter connection issues:
 
 ## Recent Updates
 
-- Added detailed API response format documentation
-- Updated authentication endpoints to return consistent response structure
+- Added animal management endpoints
+- Added inventory management endpoints
+- Added transaction model and tracking
+- Updated JWT expiration times (1h for access token, 3d for refresh token)
 - Enhanced error handling and logging
-- Added farmName field to user registration
+- Implemented proper category handling for animals (pet vs. livestock)
+- Added detailed API response format documentation

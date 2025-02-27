@@ -25,9 +25,9 @@ export const getAnimal = async (id) => {
 };
 
 // Feed an animal
-export const feedAnimal = async (id) => {
+export const feedAnimal = async (id, data = {}) => {
   try {
-    const response = await api.post(`/animals/${id}/feed`);
+    const response = await api.post(`/animals/${id}/feed`, data);
     return response.data;
   } catch (error) {
     console.error(`Error feeding animal ${id}:`, error);
@@ -36,9 +36,9 @@ export const feedAnimal = async (id) => {
 };
 
 // Water an animal
-export const waterAnimal = async (id) => {
+export const waterAnimal = async (id, data = {}) => {
   try {
-    const response = await api.post(`/animals/${id}/water`);
+    const response = await api.post(`/animals/${id}/water`, data);
     return response.data;
   } catch (error) {
     console.error(`Error watering animal ${id}:`, error);
@@ -60,10 +60,61 @@ export const callVet = async (id) => {
 // Sell an animal
 export const sellAnimal = async (id) => {
   try {
+    console.log(`Selling animal ${id}...`);
     const response = await api.post(`/animals/${id}/sell`);
+    console.log(`Sell response:`, response.data);
     return response.data;
   } catch (error) {
     console.error(`Error selling animal ${id}:`, error);
+    // Include more detailed error information
+    if (error.response) {
+      console.error(`Response status: ${error.response.status}`);
+      console.error(`Response data:`, error.response.data);
+    }
+    throw error;
+  }
+};
+
+// Create a new animal
+export const createAnimal = async (animalData) => {
+  try {
+    const response = await api.post("/animals", animalData);
+    return response.data;
+  } catch (error) {
+    console.error("Error creating animal:", error);
+    throw error;
+  }
+};
+
+// Give medicine to an animal
+export const giveMedicine = async (id, medicineId) => {
+  try {
+    const response = await api.post(`/animals/${id}/medicine`, { medicineId });
+    return response.data;
+  } catch (error) {
+    console.error(`Error giving medicine to animal ${id}:`, error);
+    throw error;
+  }
+};
+
+// Give treats to an animal
+export const giveTreats = async (id) => {
+  try {
+    const response = await api.post(`/animals/${id}/treats`);
+    return response.data;
+  } catch (error) {
+    console.error(`Error giving treats to animal ${id}:`, error);
+    throw error;
+  }
+};
+
+// Give vitamins to an animal
+export const giveVitamins = async (id) => {
+  try {
+    const response = await api.post(`/animals/${id}/vitamins`);
+    return response.data;
+  } catch (error) {
+    console.error(`Error giving vitamins to animal ${id}:`, error);
     throw error;
   }
 };

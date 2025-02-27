@@ -19,8 +19,35 @@ const inventorySchema = new mongoose.Schema(
         "water",
         "medicine",
         "treats",
+        "feed",
+        "premium_feed",
+        "vitamins",
+        "basic_medicine",
+        "advanced_medicine",
       ],
-      lowercase: true,
+      set: function (value) {
+        // Ensure the type matches one of the enum values exactly
+        const validTypes = [
+          "dogFood",
+          "catFood",
+          "livestockFeed",
+          "water",
+          "medicine",
+          "treats",
+          "feed",
+          "premium_feed",
+          "vitamins",
+          "basic_medicine",
+          "advanced_medicine",
+        ];
+
+        // Try to find a case-insensitive match
+        const match = validTypes.find(
+          (type) => type.toLowerCase() === value.toLowerCase()
+        );
+
+        return match || value;
+      },
     },
     name: {
       type: String,
@@ -52,6 +79,11 @@ const inventorySchema = new mongoose.Schema(
           water: 5,
           medicine: 50,
           treats: 10,
+          feed: 20,
+          premium_feed: 50,
+          vitamins: 40,
+          basic_medicine: 30,
+          advanced_medicine: 80,
         };
         return defaultPrices[this.type] || 10;
       },
@@ -65,8 +97,13 @@ const inventorySchema = new mongoose.Schema(
           catFood: "/images/inventory/cat-food.png",
           livestockFeed: "/images/inventory/livestock-feed.png",
           water: "/images/inventory/water.png",
-          medicine: "/images/inventory/medicine.png",
+          medicine: "/images/inventory/general-medicine.png",
           treats: "/images/inventory/treats.png",
+          feed: "/images/inventory/livestock-feed.png",
+          premium_feed: "/images/inventory/premium-feed.png",
+          vitamins: "/images/inventory/vitamins.png",
+          basic_medicine: "/images/inventory/basic-medicine.png",
+          advanced_medicine: "/images/inventory/advanced-medicine.png",
         };
         return defaultImages[this.type] || "/images/inventory/default.png";
       },
@@ -100,6 +137,47 @@ const inventorySchema = new mongoose.Schema(
             "goat",
           ],
           treats: ["dog", "cat"],
+          feed: ["cow", "pig", "chicken", "horse", "sheep", "goat"],
+          premium_feed: [
+            "dog",
+            "cat",
+            "cow",
+            "pig",
+            "chicken",
+            "horse",
+            "sheep",
+            "goat",
+          ],
+          vitamins: [
+            "dog",
+            "cat",
+            "cow",
+            "pig",
+            "chicken",
+            "horse",
+            "sheep",
+            "goat",
+          ],
+          basic_medicine: [
+            "dog",
+            "cat",
+            "cow",
+            "pig",
+            "chicken",
+            "horse",
+            "sheep",
+            "goat",
+          ],
+          advanced_medicine: [
+            "dog",
+            "cat",
+            "cow",
+            "pig",
+            "chicken",
+            "horse",
+            "sheep",
+            "goat",
+          ],
         };
         return animalTypes[this.type] || [];
       },
@@ -115,6 +193,11 @@ const inventorySchema = new mongoose.Schema(
           water: 25,
           medicine: 50,
           treats: 5,
+          feed: 15,
+          premium_feed: 30,
+          vitamins: 20,
+          basic_medicine: 40,
+          advanced_medicine: 70,
         };
         return effects[this.type] || 0;
       },
@@ -125,42 +208,72 @@ const inventorySchema = new mongoose.Schema(
   }
 );
 
-// Method to use inventory item on an animal
-inventorySchema.methods.useOn = async function (animal, amount = 1) {
-  // Check if we have enough quantity
-  if (this.quantity < amount) {
-    throw new Error("Not enough inventory");
+// Use inventory item on an animal
+inventorySchema.methods.useOn = async function (animal) {
+  // Decrement quantity
+  this.quantity -= 1;
+
+  // Apply effects based on inventory type
+  switch (this.type) {
+    case "dogFood":
+    case "catFood":
+    case "livestockFeed":
+    case "feed":
+    case "premium_feed":
+      animal.lastFed = new Date();
+      animal.health = Math.min(
+        100,
+        animal.health + (this.type === "premium_feed" ? 25 : 15)
+      );
+      animal.lastCaredAt = new Date();
+      break;
+    case "water":
+      animal.lastWatered = new Date();
+      animal.health = Math.min(100, animal.health + 10);
+      animal.lastCaredAt = new Date();
+      break;
+    case "medicine":
+    case "basic_medicine":
+    case "advanced_medicine":
+      animal.health = Math.min(
+        100,
+        animal.health +
+          (this.type === "advanced_medicine"
+            ? 40
+            : this.type === "medicine"
+            ? 30
+            : 20)
+      );
+      animal.isSick = false;
+      animal.lastCaredAt = new Date();
+      break;
+    case "treats":
+      animal.happiness = Math.min(100, animal.happiness + 20);
+      animal.lastCaredAt = new Date();
+      break;
+    case "vitamins":
+      animal.health = Math.min(100, animal.health + 15);
+      animal.happiness = Math.min(100, animal.happiness + 10);
+      animal.lastCaredAt = new Date();
+      break;
+    default:
+      // Generic effect for unknown types
+      animal.health = Math.min(100, animal.health + 10);
+      animal.lastCaredAt = new Date();
   }
 
-  // Check if this item can be used on this animal type
-  if (!this.affectsAnimalTypes.includes(animal.type)) {
-    throw new Error(`${this.name} cannot be used on ${animal.type}`);
+  // Save the animal
+  await animal.save();
+
+  // If quantity is 0, delete the inventory item
+  if (this.quantity <= 0) {
+    await this.model("Inventory").deleteOne({ _id: this._id });
+    return { animal, inventory: null };
+  } else {
+    // Save the inventory
+    await this.save();
+    return { animal, inventory: this };
   }
-
-  // Reduce inventory quantity
-  this.quantity -= amount;
-
-  // Apply health effect to animal
-  if (
-    this.type === "dogFood" ||
-    this.type === "catFood" ||
-    this.type === "livestockFeed"
-  ) {
-    animal.lastFed = new Date();
-  }
-
-  if (this.type === "water") {
-    animal.lastWatered = new Date();
-  }
-
-  // Update animal health
-  animal.health = Math.min(100, animal.health + this.healthEffect);
-  animal.lastCaredAt = new Date();
-
-  // Save both documents
-  await Promise.all([this.save(), animal.save()]);
-
-  return { animal, inventory: this };
 };
 
 console.log("Inventory model initialized");

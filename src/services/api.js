@@ -33,17 +33,44 @@ if (token) {
   setAuthToken(token);
 }
 
-// Add request interceptor to attach the JWT token to requests
+// Flag to prevent multiple refresh token requests
+let isRefreshing = false;
+// Queue of failed requests to retry after token refresh
+let failedQueue = [];
+
+// Process the queue of failed requests
+const processQueue = (error, token = null) => {
+  failedQueue.forEach((prom) => {
+    if (error) {
+      prom.reject(error);
+    } else {
+      prom.resolve(token);
+    }
+  });
+
+  failedQueue = [];
+};
+
+// Add request interceptor with detailed logging
 api.interceptors.request.use(
   (config) => {
-    console.log(`API Request: ${config.method.toUpperCase()} ${config.url}`);
+    // Create a timestamp for this request
+    const timestamp = new Date().toISOString();
 
-    // Token should already be set in headers by setAuthToken
-    if (config.headers.Authorization) {
-      console.log("Request includes auth token");
-    } else {
-      console.log("No auth token available for request");
-    }
+    // Log detailed information about the request
+    console.log(
+      `[${timestamp}] API Request: ${config.method.toUpperCase()} ${
+        config.url
+      }`,
+      {
+        headers: config.headers.common ? { ...config.headers.common } : {},
+        params: config.params,
+        // Don't log request body for security
+      }
+    );
+
+    // Add timestamp to the request for tracking
+    config._requestTime = Date.now();
 
     return config;
   },
@@ -53,21 +80,103 @@ api.interceptors.request.use(
   }
 );
 
-// Add response interceptor for logging
+// Add response interceptor with detailed logging
 api.interceptors.response.use(
   (response) => {
-    console.log(`API Response: ${response.status} from ${response.config.url}`);
-    console.log("Response data:", response.data); // Log the actual response data
+    // Calculate request duration
+    const duration = response.config._requestTime
+      ? `${Date.now() - response.config._requestTime}ms`
+      : "unknown";
+
+    // Log detailed response info
+    console.log(
+      `API Response: ${response.status} from ${response.config.url} (took ${duration})`,
+      {
+        data: response.data ? "data received" : "no data",
+        size: JSON.stringify(response.data).length,
+      }
+    );
+
     return response;
   },
-  (error) => {
-    console.error("API Response error:", error.response?.status, error.message);
-    console.error("Error response data:", error.response?.data); // Log the error response data
+  async (error) => {
+    // Log detailed error info
+    console.error("API Response error:", {
+      url: error.config?.url,
+      status: error.response?.status,
+      message: error.message,
+      duration: error.config?._requestTime
+        ? `${Date.now() - error.config._requestTime}ms`
+        : "unknown",
+    });
 
-    // Handle 401 Unauthorized errors
-    if (error.response && error.response.status === 401) {
-      console.log("Unauthorized request - clearing token");
-      setAuthToken(null);
+    const originalRequest = error.config;
+
+    // If the error is 401 (Unauthorized) and we haven't tried to refresh the token yet
+    if (
+      error.response?.status === 401 &&
+      !originalRequest._retry &&
+      originalRequest.url !== "/auth/refresh-token" && // Don't retry refresh token requests
+      originalRequest.url !== "/auth/me" // Don't retry /me requests to avoid loops
+    ) {
+      console.log("Unauthorized request - attempting to refresh token");
+
+      // Add a flag to track refresh attempts
+      if (localStorage.getItem("refreshing") === "true") {
+        console.log("Already refreshing token, waiting...");
+        try {
+          const token = await new Promise((resolve, reject) => {
+            failedQueue.push({ resolve, reject });
+          });
+          originalRequest.headers["Authorization"] = "Bearer " + token;
+          return api(originalRequest);
+        } catch (err) {
+          return Promise.reject(err);
+        }
+      }
+
+      originalRequest._retry = true;
+      localStorage.setItem("refreshing", "true");
+
+      try {
+        // Try to refresh the token
+        console.log("Calling refreshToken API");
+        const response = await authAPI.refreshToken();
+
+        // Check if the response contains an access token
+        if (response.data && response.data.accessToken) {
+          const token = response.data.accessToken;
+          console.log("Token refreshed successfully");
+
+          // Update the token
+          setAuthToken(token);
+          localStorage.setItem("refreshing", "false");
+
+          // Process the queue with the new token
+          processQueue(null, token);
+
+          // Retry the original request
+          return api(originalRequest);
+        } else {
+          console.log("Token refresh response did not contain a token");
+          setAuthToken(null);
+          localStorage.setItem("refreshing", "false");
+          window.location.href = "/#/login";
+
+          // Process the queue with an error
+          processQueue(new Error("Token refresh failed"));
+          return Promise.reject(error);
+        }
+      } catch (refreshError) {
+        console.log("Token refresh request failed:", refreshError);
+        setAuthToken(null);
+        localStorage.setItem("refreshing", "false");
+        window.location.href = "/#/login";
+
+        // Process the queue with an error
+        processQueue(refreshError);
+        return Promise.reject(refreshError);
+      }
     }
 
     return Promise.reject(error);

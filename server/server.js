@@ -20,6 +20,7 @@ console.log("Setting up routes...");
 const authRoutes = require("./routes/authRoutes");
 const animalRoutes = require("./routes/animalRoutes");
 const inventoryRoutes = require("./routes/inventoryRoutes");
+const transactionRoutes = require("./routes/transactionRoutes");
 
 // Initialize express app
 console.log("Initializing Express app...");
@@ -46,7 +47,10 @@ console.log("Registering routes...");
 app.use("/api/auth", authRoutes);
 app.use("/api/animals", animalRoutes);
 app.use("/api/inventory", inventoryRoutes);
-console.log("Routes registered: /api/auth, /api/animals, /api/inventory");
+app.use("/api/transactions", transactionRoutes);
+console.log(
+  "Routes registered: /api/auth, /api/animals, /api/inventory, /api/transactions"
+);
 
 // Health check route
 app.get("/api/health", (req, res) => {

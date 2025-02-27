@@ -12,7 +12,7 @@ const transactionSchema = new mongoose.Schema(
     type: {
       type: String,
       required: true,
-      enum: ["buy", "sell", "vet"],
+      enum: ["buy", "sell", "vet", "use"],
       lowercase: true,
     },
     itemType: {

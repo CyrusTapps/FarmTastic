@@ -7,7 +7,16 @@ console.log("Initializing inventory controller...");
 // Get all inventory items for the current user
 exports.getInventory = async (req, res) => {
   try {
-    const inventory = await Inventory.find({ userId: req.user.id });
+    // First, clean up any inventory items with quantity <= 0
+    await Inventory.deleteMany({
+      userId: req.user.id,
+      quantity: { $lte: 0 },
+    });
+
+    // Then get the remaining inventory items
+    const inventory = await Inventory.find({
+      userId: req.user.id,
+    });
 
     res.status(200).json({
       success: true,
@@ -54,7 +63,7 @@ exports.getInventoryItem = async (req, res) => {
 // Buy inventory items
 exports.buyInventory = async (req, res) => {
   try {
-    const { type, quantity } = req.body;
+    const { type, name, quantity, price, unit } = req.body;
 
     // Default inventory items with prices
     const inventoryDefaults = {
@@ -62,20 +71,28 @@ exports.buyInventory = async (req, res) => {
       catFood: { name: "Cat Food", price: 15, unit: "lbs" },
       livestockFeed: { name: "Livestock Feed", price: 10, unit: "lbs" },
       water: { name: "Water", price: 5, unit: "gallons" },
-      medicine: { name: "Medicine", price: 50, unit: "units" },
+      medicine: { name: "General Medicine", price: 50, unit: "units" },
       treats: { name: "Treats", price: 10, unit: "units" },
+      feed: { name: "Animal Feed", price: 20, unit: "lbs" },
+      premium_feed: { name: "Premium Feed", price: 50, unit: "lbs" },
+      vitamins: { name: "Animal Vitamins", price: 40, unit: "units" },
+      basic_medicine: { name: "Basic Medicine", price: 30, unit: "units" },
+      advanced_medicine: {
+        name: "Advanced Medicine",
+        price: 80,
+        unit: "units",
+      },
     };
 
-    if (!inventoryDefaults[type]) {
-      return res.status(400).json({
-        success: false,
-        error: "Invalid inventory type",
-      });
-    }
+    // Use provided values or defaults
+    const itemInfo = inventoryDefaults[type] || {
+      name: name || type,
+      price: price || 10,
+      unit: unit || "units",
+    };
 
     // Calculate total cost
-    const itemInfo = inventoryDefaults[type];
-    const totalCost = itemInfo.price * quantity;
+    const totalCost = itemInfo.price * (quantity || 1);
 
     // Find the user to check currency
     const user = await User.findById(req.user.id);
@@ -96,17 +113,17 @@ exports.buyInventory = async (req, res) => {
 
     if (inventoryItem) {
       // Update existing inventory
-      inventoryItem.quantity += quantity;
+      inventoryItem.quantity += quantity || 1;
       await inventoryItem.save();
     } else {
       // Create new inventory item
       inventoryItem = await Inventory.create({
         userId: req.user.id,
         type,
-        name: itemInfo.name,
-        quantity,
-        unit: itemInfo.unit,
-        price: itemInfo.price,
+        name: name || itemInfo.name,
+        quantity: quantity || 1,
+        unit: unit || itemInfo.unit,
+        price: price || itemInfo.price,
       });
     }
 
@@ -122,8 +139,10 @@ exports.buyInventory = async (req, res) => {
       itemId: inventoryItem._id,
       itemName: inventoryItem.name,
       amount: totalCost,
-      quantity,
-      description: `Bought ${quantity} ${inventoryItem.unit} of ${inventoryItem.name}`,
+      quantity: quantity || 1,
+      description: `Bought ${quantity || 1} ${inventoryItem.unit} of ${
+        inventoryItem.name
+      }`,
     });
 
     res.status(200).json({

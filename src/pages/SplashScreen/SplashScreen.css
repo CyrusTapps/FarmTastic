@@ -5,7 +5,7 @@
   justify-content: center;
   align-items: center;
   background-color: var(--color-green, #4caf50);
-  background-image: url("../../assets/splash_background.jpg");
+  background-image: url("../../assets/images/splash/splash_background.jpg");
   background-size: cover;
   background-position: center;
   position: relative;

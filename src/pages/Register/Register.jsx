@@ -49,7 +49,12 @@ const Register = () => {
       setIsLoading(true);
       setError("");
 
-      await register(username, email, password);
+      await register({
+        username,
+        email,
+        password,
+        farmName: "My Farm", // Add a default farm name
+      });
       console.log("Registration successful, navigating to dashboard");
       navigate("/dashboard");
     } catch (err) {

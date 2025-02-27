@@ -9,6 +9,9 @@ const {
   waterAnimal,
   callVet,
   sellAnimal,
+  giveMedicine,
+  giveTreats,
+  giveVitamins,
 } = require("../controllers/animalController");
 
 console.log("Initializing animal routes...");
@@ -29,6 +32,10 @@ router.route("/:id/water").post(waterAnimal);
 router.route("/:id/vet").post(callVet);
 
 router.route("/:id/sell").post(sellAnimal);
+
+router.post("/:id/medicine", giveMedicine);
+router.post("/:id/treats", giveTreats);
+router.post("/:id/vitamins", giveVitamins);
 
 console.log("Animal routes initialized");
 

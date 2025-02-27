@@ -45,6 +45,7 @@ export const AuthProvider = ({ children }) => {
           if (decoded.exp < currentTime) {
             console.log("AuthProvider - Token expired");
             localStorage.removeItem("token");
+            localStorage.removeItem("refreshing"); // Clear refreshing flag
             setCurrentUser(null);
             setLoading(false);
             return;
@@ -60,6 +61,7 @@ export const AuthProvider = ({ children }) => {
         } catch (error) {
           console.error("AuthProvider - Error decoding token:", error);
           localStorage.removeItem("token");
+          localStorage.removeItem("refreshing"); // Clear refreshing flag
           setCurrentUser(null);
         }
       } catch (error) {

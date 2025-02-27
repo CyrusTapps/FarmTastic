@@ -39,7 +39,7 @@ Key Technical Requirements:
 
 ## Development Progress
 
-**Current Stage**: Dashboard Development & Asset Management Implementation
+**Current Stage**: Market Implementation & Animal Management
 **Last Updated**: [Current Date]
 
 ### Completed Tasks
@@ -74,25 +74,42 @@ Key Technical Requirements:
 - [x] Implement FarmHeader component
 - [x] Update Dashboard layout with asset lists
 - [x] Add mock data for animals and inventory
+- [x] Create Market page component
+- [x] Implement animal purchase functionality
+- [x] Add pet naming modal for pet purchases
+- [x] Implement inventory purchase functionality
+- [x] Fix token refresh mechanism
+- [x] Update JWT expiration times for better user experience
+- [x] Create animal model and API endpoints
+- [x] Create inventory model and API endpoints
+- [x] Create transaction model for purchase history
+- [x] Implement proper category handling for animals (pet vs. livestock)
 
 ### Next Steps
 
-1. Backend Models and APIs:
-
-   - Create animal model and API endpoints
-   - Create inventory model and API endpoints
-   - Implement health calculation logic
-
-2. Animal Care Page:
+1. Animal Care Page:
 
    - Create animal detail page
    - Implement feeding, watering, and vet care functionality
    - Add health tracking with timestamps
+   - Connect to backend API
 
-3. Farmer's Market:
-   - Create market interface
-   - Implement buying and selling functionality
-   - Add transaction history
+2. Inventory Management:
+
+   - Create inventory detail page
+   - Implement inventory usage on animals
+   - Add inventory tracking
+
+3. Dashboard Enhancements:
+
+   - Connect to real data from backend
+   - Add health status indicators
+   - Implement sorting and filtering options
+
+4. User Profile:
+   - Create user profile page
+   - Allow farm name editing
+   - Show transaction history
 
 ### Important Decisions Made
 
@@ -108,6 +125,8 @@ Key Technical Requirements:
    - Enhanced index.html with SEO meta tags
    - Created reusable components for assets (AssetCard, AssetList)
    - Implemented responsive grid layout for dashboard
+   - Added pet naming modal for better user experience
+   - Implemented category-based animal handling (pet vs. livestock)
 
 2. Backend:
    - Robust security setup (bcrypt, helmet, etc.)
@@ -116,6 +135,9 @@ Key Technical Requirements:
    - Express server with Vercel deployment planned
    - Email case-insensitivity for login (normalized to lowercase)
    - Increased rate limits for development (to be reduced before production)
+   - Extended JWT expiration times for better user experience (1h for access token, 3d for refresh token)
+   - Implemented proper animal categorization (pet vs. livestock)
+   - Created transaction model for purchase history
 
 ### Technical Requirements Tracking
 
@@ -127,11 +149,17 @@ Key Technical Requirements:
    - [x] Login/Register flows (frontend)
    - [x] Cookie handling
    - [x] Email case-insensitivity
+   - [x] Token refresh mechanism
 
 2. Data Management:
 
    - [x] MongoDB schema design (user model)
+   - [x] MongoDB schema design (animal model)
+   - [x] MongoDB schema design (inventory model)
+   - [x] MongoDB schema design (transaction model)
    - [x] API endpoints (auth endpoints)
+   - [x] API endpoints (animal endpoints)
+   - [x] API endpoints (inventory endpoints)
    - [ ] Real-time health calculations
    - [ ] Asset management system
 
@@ -141,6 +169,7 @@ Key Technical Requirements:
    - [x] Server health checks
    - [x] Input validation (frontend)
    - [x] Rate limiting (configured for development)
+   - [x] Token refresh mechanism
 
 ## Architecture
 
@@ -169,26 +198,53 @@ Key Components Implemented:
    - AssetCard component for individual assets
    - Responsive grid layout
 
-4. Animal Care Page:
+4. Market:
+
+   - Display of available animals and inventory items
+   - Purchase functionality for animals and inventory
+   - Pet naming modal for pet purchases
+   - Currency update after purchases
+   - Error handling for insufficient funds
+
+5. Animal Care Page (Planned):
 
    - Animal Status Display
    - Action Buttons (Feed, Water, Vet, Sell)
+   - Health tracking with timestamps
 
-5. Asset Management:
-   - Inventory Display
-   - Buy/Sell Interface
-   - Usage Calculator
+6. Asset Management (Planned):
+   - Inventory Detail Display
+   - Usage Interface
+   - Inventory Tracking
 
 ### Backend Structure
 
-Key Requirements:
+Key Components Implemented:
 
-1. Express server on Vercel
-2. MongoDB Atlas integration
-3. Authentication system with JWT
-4. Health calculation system
-5. Asset management system
-6. Real-time updates and timestamps
+1. Express server with MongoDB connection
+2. Authentication system with JWT
+
+   - User model with password hashing
+   - Login/register/logout endpoints
+   - Token refresh endpoint
+   - Protected route middleware
+
+3. Animal Management System
+
+   - Animal model with health tracking
+   - Category-based handling (pet vs. livestock)
+   - Purchase endpoints
+   - Health calculation methods
+
+4. Inventory Management System
+
+   - Inventory model with quantity tracking
+   - Purchase endpoints
+   - Usage methods
+
+5. Transaction System
+   - Transaction model for purchase history
+   - Transaction creation on purchases
 
 ## Dependencies
 
@@ -246,111 +302,105 @@ The application uses a farm-themed color palette defined as CSS variables in `ma
 
 #### Secondary Colors (Accents & UI Highlights)
 
-- 🌼 Light Yellow (`#FFF176`) – A pastel shade to soften elements and create contrast.
-- 🌸 Soft Pink (`#FFCDD2`) – A friendly touch for animals and UI highlights.
-- 🍃 Light Green (`#A5D6A7`) – A pastel green for gentle backgrounds.
-- 🌤 Sky Blue (`#81D4FA`) – A bright, fun alternative for UI elements.
-- 🍞 Beige (`#D7CCC8`) – A neutral color to balance out the bright tones.
+- 🌱 Light Green (`#A5D6A7`) – For secondary elements and highlights.
+- 🌾 Beige (`#F5DEB3`) – For backgrounds and neutral areas.
+- 🌄 Orange (`#FFA726`) – For call-to-action buttons and important elements.
+- 🌊 Light Blue (`#B3E5FC`) – For information and secondary elements.
+- 🌸 Pink (`#F8BBD0`) – For special features and feminine elements.
 
-#### Neutrals (Backgrounds & Text)
+#### Utility Colors
 
-- White (`#FFFFFF`) – Clean and crisp for text contrast.
-- Light Gray (`#F5F5F5`) – Soft UI backgrounds.
-- Dark Gray (`#424242`) – For readable, high-contrast text.
-
-### Usage Guidelines
-
-- Use primary colors for main UI elements and important features
-- Use secondary colors for accents, highlights, and to create visual interest
-- Use neutrals for backgrounds, text, and to balance the brighter colors
-- Maintain sufficient contrast for accessibility (WCAG AA compliance)
-- Access colors in CSS using the defined variables:
-  ```css
-  .example {
-    color: var(--color-green);
-    background-color: var(--color-light-gray);
-  }
-  ```
+- ⚫ Dark Text (`#333333`) – For primary text content.
+- ⚪ Light Text (`#FFFFFF`) – For text on dark backgrounds.
+- 🔘 Border Gray (`#DDDDDD`) – For subtle borders and dividers.
+- 🚫 Error Red (`#D32F2F`) – For error messages and warnings.
+- ✅ Success Green (`#388E3C`) – For success messages and confirmations.
 
 ## Development Checklist
 
 ### Frontend Checklist
 
+#### Initial Setup
+
+- [x] **Project Creation**
+
+  - [x] Create Vite React project
+  - [x] Install dependencies
+  - [x] Set up folder structure
+  - [x] Configure routing
+
+- [x] **Base Styling**
+  - [x] Define color palette in main.css
+  - [x] Set up global styles
+  - [x] Create CSS variables for consistent styling
+
 #### Authentication System
 
-- [x] **Create AuthContext**
+- [x] **AuthContext**
 
-  - [x] Set up context provider in src/context/AuthContext.jsx
-  - [x] Implement state for user data and authentication status
-  - [x] Add login, register, and logout functions
-  - [x] Handle access token storage (memory only, not localStorage)
+  - [x] Create AuthContext.jsx in src/context/
+  - [x] Implement login/register/logout functions
   - [x] Add token refresh mechanism
-  - [x] **Note**: Never store JWT in localStorage due to XSS vulnerability
+  - [x] Store user data in context
 
-- [x] **JWT Handling**
+- [x] **API Service**
 
-  - [x] Create utility functions in src/services/api.js
-  - [x] Implement token decoding with jwt-decode
-  - [x] Add token expiration checking
-  - [x] **Note**: Use axios interceptors for token refresh
+  - [x] Create api.js in src/services/
+  - [x] Set up axios instance with base URL
+  - [x] Add request/response interceptors
+  - [x] Implement token handling
 
-- [x] **Protected Route Component**
-
+- [x] **Protected Route**
   - [x] Create ProtectedRoute.jsx in src/components/ProtectedRoute/
   - [x] Implement authentication checking
-  - [x] Add redirect to login for unauthenticated users
-  - [x] **Note**: Use AuthContext for auth state
+  - [x] Add redirect for unauthenticated users
 
-- [x] **SplashScreen Component**
+#### Core Pages
+
+- [x] **SplashScreen**
 
   - [x] Create SplashScreen.jsx in src/pages/SplashScreen/
-  - [x] Implement loading animation
-  - [x] Add server health check
-  - [x] Add 5-second delay before routing to login
-  - [x] **Note**: Use background image from assets
+  - [x] Add loading animation
+  - [x] Implement 5-second delay
+  - [x] Add background image
 
 - [x] **Login Page**
 
   - [x] Create Login.jsx in src/pages/Login/
-  - [x] Implement form with email and password fields
-  - [x] Add validation
-  - [x] Connect to AuthContext for login functionality
+  - [x] Implement login form with validation
   - [x] Add error handling
+  - [x] Style with Login.css
 
 - [x] **Register Page**
 
   - [x] Create Register.jsx in src/pages/Register/
-  - [x] Implement form with name, email, password fields
-  - [x] Add validation
-  - [x] Connect to AuthContext for register functionality
+  - [x] Implement registration form with validation
   - [x] Add error handling
+  - [x] Style with Register.css
 
-- [x] **Dashboard Page**
+- [x] **Dashboard**
 
   - [x] Create Dashboard.jsx in src/pages/Dashboard/
-  - [x] Implement welcome header
-  - [x] Add logout button
-  - [x] Connect to AuthContext for user data
-  - [x] Create AssetCard component for displaying animals and inventory
-  - [x] Create AssetList component for organizing assets
-  - [x] Implement responsive grid layout
+  - [x] Add welcome message
+  - [x] Implement layout for animals and inventory
+  - [x] Style with Dashboard.css
 
-- [x] **Routing**
-  - [x] Set up HashRouter in App.jsx for static hosting compatibility
-  - [x] Configure routes for all pages
-  - [x] Implement protected routes
-  - [x] Add SplashScreen with timer
-  - [x] Fix routing issues with hash router implementation
+- [x] **Market Page**
+  - [x] Create Market.jsx in src/pages/Market/
+  - [x] Implement animal and inventory purchase functionality
+  - [x] Add pet naming modal for pet purchases
+  - [x] Handle currency updates after purchases
+  - [x] Style with Market.css
 
-#### Dashboard Components
+#### Reusable Components
 
 - [x] **AssetCard Component**
 
   - [x] Create AssetCard.jsx in src/components/AssetCard/
-  - [x] Implement card layout with image placeholder
-  - [x] Add health indicator for animals
-  - [x] Add quantity display for inventory items
-  - [x] Make cards clickable to navigate to detail pages
+  - [x] Display animal or inventory item
+  - [x] Show health for animals
+  - [x] Show quantity for inventory
+  - [x] Make clickable for detail view
 
 - [x] **AssetList Component**
 
@@ -366,13 +416,39 @@ The application uses a farm-themed color palette defined as CSS variables in `ma
   - [x] Add logout button
   - [x] Make responsive for mobile
 
-// ... rest of frontend checklist ...
+#### Planned Components
+
+- [ ] **AnimalDetail Component**
+
+  - [ ] Create AnimalDetail.jsx in src/pages/AnimalDetail/
+  - [ ] Display animal information
+  - [ ] Show health status
+  - [ ] Add care actions (feed, water, vet)
+  - [ ] Implement selling functionality
+
+- [ ] **InventoryDetail Component**
+
+  - [ ] Create InventoryDetail.jsx in src/pages/InventoryDetail/
+  - [ ] Display inventory information
+  - [ ] Show quantity
+  - [ ] Add usage functionality
+  - [ ] Implement selling functionality
+
+- [ ] **UserProfile Component**
+  - [ ] Create UserProfile.jsx in src/pages/UserProfile/
+  - [ ] Display user information
+  - [ ] Allow farm name editing
+  - [ ] Show transaction history
 
 ### Backend Checklist
 
 #### Initial Setup
 
-// ... existing code ...
+- [x] **Server Configuration**
+  - [x] Create Express server
+  - [x] Set up MongoDB connection
+  - [x] Configure middleware (cors, helmet, etc.)
+  - [x] Implement error handling
 
 #### Authentication System
 
@@ -393,8 +469,8 @@ The application uses a farm-themed color palette defined as CSS variables in `ma
 
 - [x] **Token Strategy**
 
-  - [x] Implement short-lived access tokens (15-30 min)
-  - [x] Implement longer-lived refresh tokens (days/weeks)
+  - [x] Implement access tokens (1h expiration)
+  - [x] Implement refresh tokens (3d expiration)
   - [x] Store refresh tokens in HttpOnly cookies
   - [x] Set secure and SameSite cookie options
   - [x] **Note**: Access tokens should be sent in Authorization header
@@ -404,7 +480,45 @@ The application uses a farm-themed color palette defined as CSS variables in `ma
   - [x] Add token verification
   - [x] **Note**: Handle expired tokens gracefully
 
-// ... rest of backend checklist ...
+#### Data Models
+
+- [x] **Animal Model**
+
+  - [x] Create animal schema
+  - [x] Add health tracking fields
+  - [x] Implement category-based handling (pet vs. livestock)
+  - [x] Add timestamps for feeding, watering, etc.
+  - [x] **Note**: Different handling for pets vs. livestock
+
+- [x] **Inventory Model**
+
+  - [x] Create inventory schema
+  - [x] Add quantity tracking
+  - [x] Implement item types
+  - [x] **Note**: Track usage and effects
+
+- [x] **Transaction Model**
+  - [x] Create transaction schema
+  - [x] Track purchase and sale transactions
+  - [x] Link to users, animals, and inventory
+  - [x] **Note**: Important for financial tracking
+
+#### API Endpoints
+
+- [x] **Animal Endpoints**
+
+  - [x] Create animal purchase endpoint
+  - [x] Implement animal retrieval endpoints
+  - [x] Add animal care endpoints (feed, water, vet)
+  - [x] Implement animal selling endpoint
+  - [x] **Note**: Update user currency on transactions
+
+- [x] **Inventory Endpoints**
+  - [x] Create inventory purchase endpoint
+  - [x] Implement inventory retrieval endpoints
+  - [x] Add inventory usage endpoints
+  - [x] Implement inventory selling endpoint
+  - [x] **Note**: Update user currency on transactions
 
 #### Security and Optimization
 
@@ -432,8 +546,8 @@ The application uses a farm-themed color palette defined as CSS variables in `ma
 
 ### JWT & Cookie Strategy
 
-- **Access Token**: Short-lived (15-30 min), stored in memory, sent in `Authorization` header.
-- **Refresh Token**: Stored in an **HttpOnly** cookie, longer lifespan (days/weeks).
+- **Access Token**: 1-hour expiration, stored in memory, sent in `Authorization` header.
+- **Refresh Token**: 3-day expiration, stored in an **HttpOnly** cookie.
 - **Refresh Token Route**: `/api/auth/refresh` to issue new access token when expired.
 - **Security**: Set `httpOnly: true`, `secure: true`, and `sameSite: 'strict'` in production.
 
@@ -594,6 +708,11 @@ The application uses a farm-themed color palette defined as CSS variables in `ma
 - Implemented AssetList component with responsive grid layout
 - Created FarmHeader component for displaying farm name and currency
 - Updated Dashboard to use new components with mock data
+- Created Market page with animal and inventory purchase functionality
+- Added pet naming modal for pet purchases
+- Fixed token refresh mechanism
+- Updated JWT expiration times for better user experience
+- Implemented proper category handling for animals (pet vs. livestock)
 
 ### Important Decisions
 
@@ -611,6 +730,9 @@ The application uses a farm-themed color palette defined as CSS variables in `ma
 - Enhanced index.html with SEO meta tags for better search engine visibility
 - Created reusable components for assets to maintain consistency across the application
 - Implemented responsive grid layout for better mobile experience
+- Added pet naming modal for better user experience when purchasing pets
+- Extended JWT expiration times for better user experience (1h for access token, 3d for refresh token)
+- Implemented proper category handling for animals (pet vs. livestock)
 
 ### Frontend Implementation Notes
 
@@ -627,6 +749,7 @@ The application uses a farm-themed color palette defined as CSS variables in `ma
   - AuthContext for centralized auth state management
   - Protected Route component for auth checking
   - API service for backend communication
+  - Token refresh mechanism for handling expired tokens
 
 - **Dashboard Implementation**:
 
@@ -634,6 +757,14 @@ The application uses a farm-themed color palette defined as CSS variables in `ma
   - AssetList component with responsive grid layout
   - FarmHeader component for displaying farm name and currency
   - Mock data for animals and inventory until backend is implemented
+
+- **Market Implementation**:
+
+  - Display of available animals and inventory items
+  - Purchase functionality for animals and inventory
+  - Pet naming modal for pet purchases
+  - Currency update after purchases
+  - Error handling for insufficient funds
 
 - **Console Logging Strategy**:
   - Added detailed console logs throughout the application to track:
@@ -646,51 +777,49 @@ The application uses a farm-themed color palette defined as CSS variables in `ma
 
 For our next session, we should focus on:
 
-1. **Backend Models**:
-
-   - Design and implement the animal model
-   - Design and implement the inventory model
-   - Create API endpoints for animal and inventory management
-   - Implement health calculation logic based on timestamps
-
-2. **Animal Care Page**:
+1. **Animal Care Page**:
 
    - Create animal detail page component
    - Implement feeding, watering, and vet care functionality
    - Add health tracking with timestamps
    - Connect to backend API
 
-3. **Farmer's Market Page**:
+2. **Inventory Management**:
 
-   - Create market interface
-   - Implement buying and selling functionality
-   - Add transaction history
+   - Create inventory detail page
+   - Implement inventory usage on animals
+   - Add inventory tracking
    - Connect to backend API
 
-4. **Testing**:
-   - Test the complete animal care flow
-   - Verify that health calculations work correctly
-   - Test buying and selling functionality
+3. **Dashboard Enhancements**:
+
+   - Connect to real data from backend
+   - Add health status indicators
+   - Implement sorting and filtering options
+
+4. **User Profile**:
+   - Create user profile page
+   - Allow farm name editing
+   - Show transaction history
 
 ### Required Information for Next Session
 
 To continue efficiently in our next session, we should have:
 
-1. Any design mockups or wireframes for the Animal Care and Farmer's Market pages
-2. Specifications for animal types and their attributes
-3. Inventory item specifications
-4. Health calculation formulas or rules
-5. Any additional assets needed (animal images, inventory icons, etc.)
+1. Any design mockups or wireframes for the Animal Care and Inventory Detail pages
+2. Specifications for health calculation formulas or rules
+3. Requirements for inventory usage on animals
+4. Any additional assets needed (icons, images, etc.)
 
 ### TODO
 
-- Implement backend models for animals and inventory
-- Create API endpoints for animal and inventory management
-- Develop animal care page with feeding, watering, and vet care functionality
-- Implement Farmer's Market page for buying and selling
-- Connect frontend components to backend API
-- Add real-time health calculation based on timestamps
-- Set up MongoDB Atlas for production
+- Implement Animal Care page with feeding, watering, and vet care functionality
+- Create Inventory Detail page with usage functionality
+- Connect Dashboard to real data from backend
+- Implement User Profile page
+- Add health status indicators to Dashboard
+- Implement sorting and filtering options for assets
+- Add transaction history to User Profile
 - Address all pre-deployment TODOs listed in the dedicated section
 
 ### Questions/Concerns
@@ -717,14 +846,21 @@ FarmTastic/
 │   ├── config/
 │   │   └── db.js
 │   ├── controllers/
-│   │   └── authController.js
+│   │   ├── authController.js
+│   │   ├── animalController.js
+│   │   └── inventoryController.js
 │   ├── middleware/
 │   │   ├── authMiddleware.js
 │   │   └── rateLimitMiddleware.js
 │   ├── models/
-│   │   └── userModel.js
+│   │   ├── userModel.js
+│   │   ├── animalModel.js
+│   │   ├── inventoryModel.js
+│   │   └── transactionModel.js
 │   ├── routes/
-│   │   └── authRoutes.js
+│   │   ├── authRoutes.js
+│   │   ├── animalRoutes.js
+│   │   └── inventoryRoutes.js
 │   ├── utils/
 │   │   └── jwtUtils.js
 │   ├── .env
@@ -757,6 +893,9 @@ FarmTastic/
 │   │   ├── Login/
 │   │   │   ├── Login.jsx
 │   │   │   └── Login.css
+│   │   ├── Market/
+│   │   │   ├── Market.jsx
+│   │   │   └── Market.css
 │   │   ├── Register/
 │   │   │   ├── Register.jsx
 │   │   │   └── Register.css
@@ -764,7 +903,9 @@ FarmTastic/
 │   │       ├── SplashScreen.jsx
 │   │       └── SplashScreen.css
 │   ├── services/
-│   │   └── api.js
+│   │   ├── api.js
+│   │   ├── animalService.js
+│   │   └── inventoryService.js
 │   ├── App.css
 │   ├── App.jsx
 │   ├── main.css

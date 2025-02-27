@@ -1,10 +1,13 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "../../context/AuthContext";
+import { useRefresh } from "../../context/RefreshContext";
 import FarmHeader from "../../components/FarmHeader/FarmHeader";
 import AssetList from "../../components/AssetList/AssetList";
 import LoadingSpinner from "../../components/LoadingSpinner/LoadingSpinner";
 import { getAnimals } from "../../services/animalService";
 import { getInventory } from "../../services/inventoryService";
+import DebugMonitor from "../../components/DebugMonitor";
+import TransactionList from "../../components/TransactionList/TransactionList";
 import "./Dashboard.css";
 
 console.log("Initializing Dashboard page component...");
@@ -12,36 +15,81 @@ console.log("Initializing Dashboard page component...");
 const Dashboard = () => {
   console.log("Rendering Dashboard page");
   const { currentUser, logout, updateUser } = useAuth();
+  const { refreshTrigger } = useRefresh();
   const [animals, setAnimals] = useState([]);
   const [inventory, setInventory] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Fetch data from API
+  // Fetch data from API - triggered on mount, every 5 minutes, and when refreshTrigger changes
   useEffect(() => {
+    let isMounted = true;
+    let fetchCount = 0;
+
+    console.log(
+      `Dashboard - Setting up data fetching (refreshTrigger: ${refreshTrigger})`
+    );
+
     const fetchData = async () => {
+      if (!isMounted) return;
+
+      const currentFetchCount = ++fetchCount;
+      console.log(`Dashboard - Starting fetch #${currentFetchCount}`);
+
       try {
         setLoading(true);
         setError(null);
 
         // Fetch animals
+        console.log(`Dashboard - Fetch #${currentFetchCount}: Getting animals`);
         const animalsResponse = await getAnimals();
-        setAnimals(animalsResponse.data);
+        if (isMounted) {
+          console.log(
+            `Dashboard - Fetch #${currentFetchCount}: Received ${animalsResponse.data.length} animals`
+          );
+          setAnimals(animalsResponse.data);
+        }
 
         // Fetch inventory
+        console.log(
+          `Dashboard - Fetch #${currentFetchCount}: Getting inventory`
+        );
         const inventoryResponse = await getInventory();
-        setInventory(inventoryResponse.data);
+        if (isMounted) {
+          console.log(
+            `Dashboard - Fetch #${currentFetchCount}: Received ${inventoryResponse.data.length} inventory items`
+          );
+          setInventory(inventoryResponse.data);
+        }
 
-        setLoading(false);
+        if (isMounted) {
+          console.log(`Dashboard - Fetch #${currentFetchCount}: Complete`);
+          setLoading(false);
+        }
       } catch (error) {
-        console.error("Error fetching dashboard data:", error);
-        setError("Failed to load farm data. Please try again.");
-        setLoading(false);
+        console.error(`Dashboard - Fetch #${currentFetchCount}: Error:`, error);
+        if (isMounted) {
+          setError("Failed to load farm data. Please try again.");
+          setLoading(false);
+        }
       }
     };
 
     fetchData();
-  }, []);
+
+    // Set up a reasonable polling interval (5 minutes)
+    console.log(`Dashboard - Setting up interval (5 minutes)`);
+    const intervalId = setInterval(() => {
+      console.log(`Dashboard - Interval triggered`);
+      fetchData();
+    }, 5 * 60 * 1000);
+
+    return () => {
+      console.log(`Dashboard - Cleaning up effect`);
+      isMounted = false;
+      clearInterval(intervalId);
+    };
+  }, [refreshTrigger]); // Re-fetch when refreshTrigger changes
 
   console.log(
     "Dashboard - Current user:",
@@ -76,6 +124,7 @@ const Dashboard = () => {
 
   return (
     <div className="dashboard-container">
+      <DebugMonitor componentName="Dashboard" />
       <FarmHeader onLogout={handleLogout} />
 
       <div className="dashboard-content">
@@ -105,6 +154,8 @@ const Dashboard = () => {
             )}
 
             <AssetList assets={[marketAsset]} title="Market" />
+
+            <TransactionList limit={5} />
           </>
         )}
       </div>

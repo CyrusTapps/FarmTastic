@@ -24,13 +24,37 @@ export const getInventoryItem = async (id) => {
   }
 };
 
-// Buy inventory items
-export const buyInventory = async (type, quantity) => {
+// Buy inventory
+export const buyInventory = async (inventoryData) => {
   try {
-    const response = await api.post("/inventory", { type, quantity });
+    // Ensure the type is in the correct case
+    const typeMapping = {
+      dogfood: "dogFood",
+      catfood: "catFood",
+      livestockfeed: "livestockFeed",
+      water: "water",
+      medicine: "medicine",
+      generalmedicine: "medicine",
+      treats: "treats",
+      feed: "feed",
+      premium_feed: "premium_feed",
+      premiumfeed: "premium_feed",
+      vitamins: "vitamins",
+      basic_medicine: "basic_medicine",
+      basicmedicine: "basic_medicine",
+      advanced_medicine: "advanced_medicine",
+      advancedmedicine: "advanced_medicine",
+    };
+
+    // If the lowercase version exists in our mapping, use the correct case
+    if (inventoryData.type && typeMapping[inventoryData.type.toLowerCase()]) {
+      inventoryData.type = typeMapping[inventoryData.type.toLowerCase()];
+    }
+
+    const response = await api.post("/inventory", inventoryData);
     return response.data;
   } catch (error) {
-    console.error(`Error buying ${type}:`, error);
+    console.error(`Error buying ${inventoryData.type}:`, error);
     throw error;
   }
 };
