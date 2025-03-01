@@ -10,6 +10,21 @@ import horseImg from "../../assets/images/animals/horse.jpg";
 import pigImg from "../../assets/images/animals/pig.jpg";
 import sheepImg from "../../assets/images/animals/sheep.jpg";
 
+// Import inventory images
+import dogFoodImg from "../../assets/images/inventory/dog-food.png";
+import catFoodImg from "../../assets/images/inventory/cat-food.png";
+import feedImg from "../../assets/images/inventory/livestock-feed.png";
+import genMedImg from "../../assets/images/inventory/general-medicine.png";
+import vitaminsImg from "../../assets/images/inventory/vitamins.png";
+import waterImg from "../../assets/images/inventory/water.png";
+import treatsImg from "../../assets/images/inventory/treats.png";
+import premFeedImg from "../../assets/images/inventory/premium-feed.png";
+import basicMedImg from "../../assets/images/inventory/basic-medicine.png";
+import advMedImg from "../../assets/images/inventory/advanced-medicine.png";
+
+// Import UI images
+import marketImg from "../../assets/images/ui/market.png";
+
 // Map of animal types to their images
 const animalImages = {
   cat: catImg,
@@ -19,6 +34,22 @@ const animalImages = {
   horse: horseImg,
   pig: pigImg,
   sheep: sheepImg,
+};
+
+// Map of inventory types to their images
+const inventoryImages = {
+  dogFood: dogFoodImg,
+  catFood: catFoodImg,
+  livestockFeed: feedImg,
+  medicine: genMedImg,
+  vitamins: vitaminsImg,
+  water: waterImg,
+  treats: treatsImg,
+  premium_feed: premFeedImg,
+  basic_medicine: basicMedImg,
+  advanced_medicine: advMedImg,
+  feed: feedImg,
+  market: marketImg,
 };
 
 const AssetCard = ({ asset }) => {
@@ -51,10 +82,13 @@ const AssetCard = ({ asset }) => {
 
   // Get the appropriate image for this asset
   const getAssetImage = () => {
-    if (asset.type && animalImages[asset.type.toLowerCase()]) {
+    if (asset.type === "market") {
+      return marketImg;
+    } else if (asset.type && animalImages[asset.type.toLowerCase()]) {
       return animalImages[asset.type.toLowerCase()];
-    }
-    return null;
+    } else if (asset.type && inventoryImages[asset.type]) {
+      return inventoryImages[asset.type];
+    } else return null;
   };
 
   return (

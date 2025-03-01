@@ -32,7 +32,7 @@ function App() {
         "🔄 App - Splash screen timer complete, hiding splash screen"
       );
       setLoading(false);
-    }, 2000);
+    }, 5000);
 
     return () => {
       console.log("🔄 App - Cleaning up splash screen timer");

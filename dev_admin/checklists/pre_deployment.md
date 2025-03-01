@@ -35,6 +35,28 @@
   - [ ] Add appropriate ARIA attributes
   - [ ] Test with screen reader
 
+## Mobile (Capacitor)
+
+- [ ] **Android Configuration**
+
+  - [ ] Update AndroidManifest.xml for production
+  - [ ] Configure app icon and splash screen
+  - [ ] Test on multiple Android device sizes
+  - [ ] Verify network connectivity handling
+
+- [ ] **Mobile-Specific Features**
+
+  - [ ] Test hardware back button behavior
+  - [ ] Verify touch target sizes are appropriate
+  - [ ] Check app behavior when backgrounded/resumed
+  - [ ] Test offline capabilities
+
+- [ ] **Mobile Build**
+  - [ ] Update capacitor.config.json for production
+  - [ ] Build Android APK
+  - [ ] Test APK on physical device
+  - [ ] Verify API connectivity from built app
+
 ## Backend
 
 - [ ] **Security**
@@ -106,8 +128,10 @@
   - [ ] Test user registration and login
   - [ ] Test core game mechanics
   - [ ] Verify data persistence
+  - [ ] Test mobile app against production API
 
 - [ ] **Documentation**
   - [ ] Update documentation with production URLs
   - [ ] Document deployment process
   - [ ] Create user guide (if needed)
+  - [ ] Document mobile app setup and testing process

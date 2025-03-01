@@ -1,0 +1,8 @@
+{
+  "appId": "com.example.farmtastic",
+  "appName": "FarmTastic",
+  "webDir": "dist",
+  "server": {
+    "androidScheme": "http"
+  }
+}

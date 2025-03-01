@@ -132,6 +132,17 @@
   - [ ] Include request/response examples
   - [ ] Add error response documentation
 
+## Mobile Support
+
+- [ ] **CORS Configuration**
+
+  - [ ] Update CORS to allow requests from mobile app
+  - [ ] Test API access from Android emulator
+
+- [ ] **API Optimization**
+  - [ ] Optimize response size for mobile data usage
+  - [ ] Consider adding compression for mobile requests
+
 ## Deployment Preparation
 
 - [ ] **Environment Configuration**

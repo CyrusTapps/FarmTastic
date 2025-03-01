@@ -4,18 +4,24 @@ const Transaction = require("../models/transactionModel");
 exports.getTransactions = async (req, res) => {
   try {
     const { limit, filter } = req.query;
+    console.log("Transaction filter request:", { limit, filter });
 
     // Build query
     const query = { userId: req.user.id };
 
     // Add filters if provided
-    if (filter === "purchase" || filter === "sale") {
+    if (
+      filter === "buy" ||
+      filter === "sell" ||
+      filter === "vet" ||
+      filter === "use"
+    ) {
       query.type = filter;
-    }
-
-    if (filter === "animal" || filter === "inventory") {
+    } else if (filter === "animal" || filter === "inventory") {
       query.itemType = filter;
     }
+
+    console.log("Transaction query:", query);
 
     // Create the query
     let transactionsQuery = Transaction.find(query).sort({ createdAt: -1 }); // Most recent first

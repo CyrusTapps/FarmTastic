@@ -2,7 +2,7 @@
 
 A full-stack farm management simulation game where users can purchase, care for, and sell virtual animals while managing resources and inventory.
 
-![FarmTastic Screenshot](path/to/screenshot.png)
+![FarmTastic Screenshot](./src/assets/images/appSnip.png)
 
 ## 🌟 Features
 

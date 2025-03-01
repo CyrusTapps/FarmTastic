@@ -125,3 +125,27 @@
 
 - [x] **Inventory Service**
   - [x] Create inventoryService.js in src/services/
+  - [x] Implement CRUD operations
+  - [x] Add buying/selling functionality
+
+## Mobile Development (Capacitor)
+
+- [x] **Capacitor Setup**
+
+  - [x] Install Capacitor dependencies
+  - [x] Create capacitor.config.json
+  - [x] Configure Vite for Capacitor compatibility
+  - [x] Add Android platform
+
+- [ ] **Android Configuration**
+
+  - [ ] Update AndroidManifest.xml for HTTP traffic (development)
+  - [ ] Configure app permissions
+  - [ ] Test on Android emulator
+  - [ ] Adjust UI for mobile display if needed
+
+- [ ] **Mobile-Specific Features**
+  - [ ] Handle hardware back button
+  - [ ] Implement offline mode capabilities
+  - [ ] Optimize touch interactions
+  - [ ] Add network status monitoring

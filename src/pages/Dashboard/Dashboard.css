@@ -119,3 +119,68 @@
   margin: 0;
   color: var(--color-dark-gray);
 }
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.dead-animal-modal {
+  background-color: var(--color-white);
+  border-radius: 8px;
+  padding: 24px;
+  width: 90%;
+  max-width: 500px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.dead-animal-modal h2 {
+  color: var(--color-red);
+  margin-top: 0;
+  text-align: center;
+}
+
+.dead-animal-list {
+  list-style-type: none;
+  padding: 0;
+  margin: 16px 0;
+}
+
+.dead-animal-item {
+  background-color: var(--color-dark-gray);
+  padding: 12px;
+  margin-bottom: 8px;
+  border-radius: 4px;
+  border-left: 4px solid var(--color-red);
+}
+
+.dead-animal-message {
+  font-style: italic;
+  color: var(--color-dark-gray);
+  margin: 16px 0;
+  text-align: center;
+}
+
+.close-modal-button {
+  background-color: var(--color-green);
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+  width: 100%;
+  margin-top: 16px;
+}
+
+.close-modal-button:hover {
+  background-color: #3a7020;
+}

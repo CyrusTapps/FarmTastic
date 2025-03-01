@@ -23,7 +23,7 @@
   --color-dark-gray: #424242;
 
   /* Default text and background colors */
-  color: var(--color-dark-gray);
+  color: var(--color-dark-gray) c;
   background-color: var(--color-light-gray);
 
   font-synthesis: none;
