@@ -30,7 +30,9 @@ src/
 ├── App.css
 ├── App.jsx # Main application component
 ├── main.css # Global styles
-└── main.jsx # Application entry point
+├── main.jsx # Application entry point
+├── capacitor.config.json # Capacitor configuration
+└── android/ # Android platform files (generated)
 
 ## Key Components
 
@@ -140,6 +142,22 @@ src/
    - Purpose: Transaction-related API calls
    - Features: Get transactions, filter transactions
 
+## Mobile Development (Capacitor)
+
+### Configuration
+
+- **capacitor.config.json**: Main configuration file for Capacitor
+- **android/**: Generated Android project files
+- **AndroidManifest.xml**: Android app configuration and permissions
+
+### Mobile-Specific Considerations
+
+- Touch-friendly UI elements
+- Hardware back button handling
+- Network connectivity monitoring
+- Offline capabilities (future enhancement)
+- Screen size adaptations
+
 ## Data Flow
 
 1. User actions trigger service functions
@@ -154,3 +172,4 @@ src/
 2. Action-based refreshes via RefreshContext
 3. Proper cleanup in useEffect hooks
 4. Conditional console logging for development only
+5. Mobile-optimized asset sizes

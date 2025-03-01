@@ -6,6 +6,7 @@ console.log("Initializing animal service...");
 export const getAnimals = async () => {
   try {
     const response = await api.get("/animals");
+    console.log("getAnimals response:", response.data);
     return response.data;
   } catch (error) {
     console.error("Error fetching animals:", error);

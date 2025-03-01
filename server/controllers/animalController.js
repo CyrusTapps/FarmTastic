@@ -8,21 +8,86 @@ console.log("Initializing animal controller...");
 // Get all animals for the current user
 exports.getAnimals = async (req, res) => {
   try {
+    // Get current animals
     const animals = await Animal.find({ userId: req.user.id });
+    console.log("Found animals:", animals.length);
 
-    // Calculate current health for each animal
-    const animalsWithCurrentHealth = animals.map((animal) => {
+    // Calculate and update current health for each animal
+    const updatedAnimals = [];
+    const deadAnimals = [];
+
+    for (const animal of animals) {
       const currentHealth = animal.calculateCurrentHealth();
-      return {
-        ...animal._doc,
-        currentHealth,
-      };
-    });
+      console.log(
+        `Animal ${animal._id} (${animal.type}): health = ${currentHealth}`
+      );
 
-    res.status(200).json({
+      // Check if animal has died (0% health)
+      if (currentHealth <= 0) {
+        console.log(`Animal ${animal._id} (${animal.type}) is dead`);
+        deadAnimals.push({
+          _id: animal._id,
+          name: animal.name || animal.type,
+          type: animal.type,
+        });
+        continue; // Skip adding to updatedAnimals
+      }
+
+      // Update the stored health if it has changed
+      if (currentHealth !== animal.health) {
+        animal.health = currentHealth;
+        await animal.save();
+      }
+
+      updatedAnimals.push(animal.toObject ? animal.toObject() : animal);
+    }
+
+    // Process any newly dead animals
+    const deathTransactions = [];
+    if (deadAnimals.length > 0) {
+      console.log(`Found ${deadAnimals.length} dead animals`);
+
+      // Create transaction records for each dead animal
+      for (const animal of deadAnimals) {
+        console.log(
+          `Creating death transaction for ${animal.name || animal.type}`
+        );
+        try {
+          // Using 'sell' with negative amount to represent a loss
+          const transaction = await Transaction.create({
+            userId: req.user.id,
+            type: "sell", // Using a valid type from the enum
+            itemType: "animal",
+            itemId: animal._id,
+            itemName: animal.name || animal.type,
+            amount: 0, // No money gained from death
+            quantity: 1,
+            description: `${animal.name || animal.type} died due to neglect`,
+            createdAt: new Date(),
+          });
+          deathTransactions.push(transaction);
+        } catch (transactionError) {
+          console.error("Error creating death transaction:", transactionError);
+          // Continue processing other animals even if one transaction fails
+        }
+      }
+
+      // Delete the dead animals AFTER creating the response data
+      console.log(
+        `Now removing ${deadAnimals.length} dead animals from database`
+      );
+      await Animal.deleteMany({ _id: { $in: deadAnimals.map((a) => a._id) } });
+    }
+
+    // Return response with animals and any death transactions
+    console.log(
+      `Returning ${updatedAnimals.length} live animals and ${deathTransactions.length} death transactions`
+    );
+    return res.status(200).json({
       success: true,
-      count: animals.length,
-      data: animalsWithCurrentHealth,
+      count: updatedAnimals.length,
+      data: updatedAnimals,
+      deadAnimals: deathTransactions.length > 0 ? deathTransactions : undefined,
     });
   } catch (error) {
     console.error("Error getting animals:", error);
@@ -50,6 +115,35 @@ exports.getAnimal = async (req, res) => {
 
     // Calculate current health
     const currentHealth = animal.calculateCurrentHealth();
+
+    // Check if animal has died (0% health)
+    if (currentHealth <= 0) {
+      // Delete the animal
+      await Animal.deleteOne({ _id: animal._id });
+
+      // Create a transaction record for the dead animal
+      await Transaction.create({
+        userId: req.user.id,
+        type: "loss",
+        itemType: "animal",
+        itemId: animal._id,
+        amount: 0,
+        quantity: 1,
+        description: "Animal died due to neglect",
+      });
+
+      return res.status(410).json({
+        success: false,
+        error: "This animal has died due to neglect",
+        animalDied: true,
+      });
+    }
+
+    // Update the stored health if it has changed
+    if (currentHealth !== animal.health) {
+      animal.health = currentHealth;
+      await animal.save();
+    }
 
     res.status(200).json({
       success: true,

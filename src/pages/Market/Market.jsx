@@ -16,6 +16,18 @@ import horseImg from "../../assets/images/animals/horse.jpg";
 import pigImg from "../../assets/images/animals/pig.jpg";
 import sheepImg from "../../assets/images/animals/sheep.jpg";
 
+// Import inventory images
+import dogFoodImg from "../../assets/images/inventory/dog-food.png";
+import catFoodImg from "../../assets/images/inventory/cat-food.png";
+import feedImg from "../../assets/images/inventory/livestock-feed.png";
+import genMedImg from "../../assets/images/inventory/general-medicine.png";
+import vitaminsImg from "../../assets/images/inventory/vitamins.png";
+import waterImg from "../../assets/images/inventory/water.png";
+import treatsImg from "../../assets/images/inventory/treats.png";
+import premFeedImg from "../../assets/images/inventory/premium-feed.png";
+import basicMedImg from "../../assets/images/inventory/basic-medicine.png";
+import advMedImg from "../../assets/images/inventory/advanced-medicine.png";
+
 // Map of animal types to their images
 const animalImages = {
   cat: catImg,
@@ -25,6 +37,21 @@ const animalImages = {
   horse: horseImg,
   pig: pigImg,
   sheep: sheepImg,
+};
+
+// Map of inventory types to their images
+const inventoryImages = {
+  dogFood: dogFoodImg,
+  catFood: catFoodImg,
+  livestockFeed: feedImg,
+  medicine: genMedImg,
+  vitamins: vitaminsImg,
+  water: waterImg,
+  treats: treatsImg,
+  premium_feed: premFeedImg,
+  basic_medicine: basicMedImg,
+  advanced_medicine: advMedImg,
+  feed: feedImg,
 };
 
 const Market = () => {
@@ -303,8 +330,18 @@ const Market = () => {
   };
 
   const getItemImage = (item) => {
-    if (item.type && animalImages[item.type.toLowerCase()]) {
+    if (
+      activeCategory === "animals" &&
+      item.type &&
+      animalImages[item.type.toLowerCase()]
+    ) {
       return animalImages[item.type.toLowerCase()];
+    } else if (
+      (activeCategory === "supplies" || activeCategory === "medicine") &&
+      item.type &&
+      inventoryImages[item.type]
+    ) {
+      return inventoryImages[item.type];
     }
     return null;
   };
@@ -426,7 +463,16 @@ const Market = () => {
                   <p className="item-quantity">Quantity: {item.quantity}</p>
                 )}
                 <div className="item-price-container">
-                  <span className="item-price">${item.price}</span>
+                  <span className="item-price">
+                    {activeCategory !== "animals" && item.quantity > 1 ? (
+                      <>
+                        ${item.price} each (Total: ${item.price * item.quantity}
+                        )
+                      </>
+                    ) : (
+                      <>${item.price}</>
+                    )}
+                  </span>
                   <button
                     className="purchase-button"
                     onClick={() => handlePurchaseClick(item)}

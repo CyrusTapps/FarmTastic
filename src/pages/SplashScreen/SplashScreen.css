@@ -82,6 +82,29 @@
   max-width: 300px;
 }
 
+/* Copyright and version styles */
+.copyright-container {
+  position: absolute;
+  bottom: 20px;
+  left: 0;
+  right: 0;
+  text-align: center;
+  z-index: 2;
+  animation: fadeIn 2s ease-in-out;
+}
+
+.copyright-text {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 14px;
+  margin: 0 0 5px 0;
+}
+
+.version-text {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 12px;
+  margin: 0;
+}
+
 @keyframes spin {
   to {
     transform: rotate(360deg);

@@ -69,6 +69,21 @@
 - Higher limits in development
 - Reduced limits planned for production
 
+## Mobile Security Considerations
+
+### Android-Specific Security
+
+- HTTP traffic allowed only in development
+- HTTPS required for production
+- Network security configuration for Android 9+
+- Proper permissions in AndroidManifest.xml
+
+### Token Storage in Mobile
+
+- Secure storage for tokens in mobile environment
+- Consideration for biometric authentication in future versions
+- Session management adapted for mobile context
+
 ## Technical Requirements Tracking
 
 1. Authentication:
@@ -120,6 +135,13 @@
    - Target code: `baseURL: "https://your-production-api.com/api"`
 
 5. **Console Logging**:
+
    - Files: Multiple (search for "console.log")
    - Change: Remove or disable excessive console logging in production build
    - Consider implementing a logging utility that only logs in development
+
+6. **Mobile Configuration**:
+   - File: `capacitor.config.json`
+   - Change: Update androidScheme to "https" for production
+   - Current code: `"androidScheme": "http"` (development)
+   - Target code: `"androidScheme": "https"` (production)

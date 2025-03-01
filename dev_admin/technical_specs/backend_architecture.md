@@ -142,3 +142,23 @@ server/
 4. Rate limiting
 5. Input validation
 6. Owner verification for all resources
+
+## Mobile Support
+
+### CORS Configuration
+
+- Configured to accept requests from both web and mobile clients
+- Development: Allows localhost and Android emulator origins
+- Production: Restricts to specific domains and app origins
+
+### API Optimization
+
+- Response size optimization for mobile data usage
+- Efficient data structures to minimize payload size
+- Future consideration: Compression for mobile requests
+
+### Authentication Considerations
+
+- Token-based authentication works seamlessly across platforms
+- HTTP-only cookies for web client
+- Token storage strategy for mobile client

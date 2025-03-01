@@ -15,6 +15,10 @@ const Transactions = () => {
         return "buy";
       case "sale":
         return "sell";
+      case "vet":
+        return "vet";
+      case "use":
+        return "use";
       case "animal":
         return "animal";
       case "inventory":
@@ -47,6 +51,8 @@ const Transactions = () => {
                 <option value="all">All Transactions</option>
                 <option value="purchase">Purchases</option>
                 <option value="sale">Sales</option>
+                <option value="vet">Veterinary</option>
+                <option value="use">Item Usage</option>
                 <option value="animal">Animals</option>
                 <option value="inventory">Inventory</option>
               </select>
