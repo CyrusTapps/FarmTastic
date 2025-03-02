@@ -11,27 +11,23 @@ const api = axios.create({
   withCredentials: true, // Important for cookies
 });
 
+// In-memory token storage (not persisted in localStorage)
+let authToken = null;
+
 // We'll set up a function to update the auth token that can be called from the AuthContext
 export const setAuthToken = (token) => {
   console.log("Setting auth token for API requests");
   if (token) {
-    // Set token in localStorage for persistence
-    localStorage.setItem("token", token);
+    // Store token in memory only
+    authToken = token;
     // Set token in axios defaults
     api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
   } else {
     // Remove token if null is passed
-    localStorage.removeItem("token");
+    authToken = null;
     delete api.defaults.headers.common["Authorization"];
   }
 };
-
-// Initialize token from localStorage if it exists
-const token = localStorage.getItem("token");
-if (token) {
-  console.log("Found token in localStorage, initializing API with it");
-  setAuthToken(token);
-}
 
 // Flag to prevent multiple refresh token requests
 let isRefreshing = false;
@@ -122,7 +118,7 @@ api.interceptors.response.use(
       console.log("Unauthorized request - attempting to refresh token");
 
       // Add a flag to track refresh attempts
-      if (localStorage.getItem("refreshing") === "true") {
+      if (sessionStorage.getItem("refreshing") === "true") {
         console.log("Already refreshing token, waiting...");
         try {
           const token = await new Promise((resolve, reject) => {
@@ -136,7 +132,7 @@ api.interceptors.response.use(
       }
 
       originalRequest._retry = true;
-      localStorage.setItem("refreshing", "true");
+      sessionStorage.setItem("refreshing", "true");
 
       try {
         // Try to refresh the token
@@ -150,7 +146,7 @@ api.interceptors.response.use(
 
           // Update the token
           setAuthToken(token);
-          localStorage.setItem("refreshing", "false");
+          sessionStorage.setItem("refreshing", "false");
 
           // Process the queue with the new token
           processQueue(null, token);
@@ -160,7 +156,7 @@ api.interceptors.response.use(
         } else {
           console.log("Token refresh response did not contain a token");
           setAuthToken(null);
-          localStorage.setItem("refreshing", "false");
+          sessionStorage.setItem("refreshing", "false");
           window.location.href = "/#/login";
 
           // Process the queue with an error
@@ -170,7 +166,7 @@ api.interceptors.response.use(
       } catch (refreshError) {
         console.log("Token refresh request failed:", refreshError);
         setAuthToken(null);
-        localStorage.setItem("refreshing", "false");
+        sessionStorage.setItem("refreshing", "false");
         window.location.href = "/#/login";
 
         // Process the queue with an error
