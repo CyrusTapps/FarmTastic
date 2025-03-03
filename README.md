@@ -43,6 +43,92 @@ A full-stack farm management simulation game where users can purchase, care for,
 - Push notifications for animal care reminders
 - Offline capabilities
 
+## 🚀 Getting Started
+
+### Prerequisites
+
+- Node.js (v16+)
+- MongoDB (local installation or Atlas account)
+
+### Local Development Setup
+
+#### Frontend Setup
+
+1. Clone the repository
+
+   ```bash
+   git clone https://github.com/yourusername/farmtastic.git
+   cd farmtastic
+   ```
+
+2. Install dependencies
+
+   ```bash
+   npm install
+   ```
+
+3. Set up environment variables
+
+   ```bash
+   cp .env.template .env
+   ```
+
+   Edit the `.env` file if needed.
+
+4. Start the development server
+   ```bash
+   npm run dev
+   ```
+   The frontend will be available at http://localhost:5173
+
+#### Backend Setup
+
+1. Navigate to the server directory
+
+   ```bash
+   cd server
+   ```
+
+2. Install dependencies
+
+   ```bash
+   npm install
+   ```
+
+3. Set up MongoDB locally
+
+   - Make sure MongoDB is installed on your system
+   - Start the MongoDB service:
+     - On Windows: Start the MongoDB service from Services
+     - On macOS: `brew services start mongodb-community`
+     - On Linux: `sudo systemctl start mongod`
+   - The database will be created automatically when the server starts
+
+4. Set up environment variables
+
+   ```bash
+   cp .env.template .env
+   ```
+
+   - Generate secure JWT secrets:
+     ```bash
+     node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+     ```
+   - Update the JWT_SECRET and REFRESH_TOKEN_SECRET in your .env file with these values
+
+5. Start the server
+
+   ```bash
+   npm run dev
+   ```
+
+   The backend API will be available at http://localhost:5000/api
+
+6. (Optional) Seed the database with initial data
+   ```bash
+   npm run seed
+   ```
+
 ## 🔐 Security Features
 
 ### Authentication System
@@ -95,58 +181,6 @@ server/
 ├── utils/             # Helper functions
 └── server.js          # Main application entry point
 ```
-
-## 🚀 Getting Started
-
-### Prerequisites
-
-- Node.js (v16+)
-- MongoDB (local or Atlas)
-
-### Installation
-
-1. Clone the repository
-
-```bash
-git clone https://github.com/yourusername/farmtastic.git
-cd farmtastic
-```
-
-2. Install frontend dependencies
-
-```bash
-npm install
-```
-
-3. Install backend dependencies
-
-```bash
-cd server
-npm install
-```
-
-4. Create environment variables
-
-```bash
-# In server directory, create .env file with:
-PORT=5000
-MONGODB_URI=mongodb://localhost:27017/farmtastic
-JWT_SECRET=your_secure_jwt_secret
-JWT_REFRESH_SECRET=your_secure_refresh_secret
-NODE_ENV=development
-```
-
-5. Start development servers
-
-```bash
-# In server directory
-npm run dev
-
-# In root directory (in another terminal)
-npm run dev
-```
-
-6. Open your browser to http://localhost:5173
 
 ## 📱 Responsive Design
 

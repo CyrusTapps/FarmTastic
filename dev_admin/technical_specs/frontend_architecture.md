@@ -11,6 +11,7 @@ src/
 │ ├── LoadingSpinner/
 │ ├── ProtectedRoute/
 │ └── TransactionList/
+│ └── Debug
 ├── context/ # React context providers
 │ ├── AuthContext.jsx
 │ └── RefreshContext.jsx

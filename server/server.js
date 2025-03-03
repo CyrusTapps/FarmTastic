@@ -34,10 +34,10 @@ app.use(helmet());
 app.use(morgan("dev"));
 
 // Configure CORS
-console.log(`Configuring CORS for origin: ${process.env.CLIENT_URL}`);
+console.log("Configuring CORS with permissive settings for development...");
 app.use(
   cors({
-    origin: process.env.CLIENT_URL,
+    origin: true, // Allow all origins
     credentials: true,
   })
 );

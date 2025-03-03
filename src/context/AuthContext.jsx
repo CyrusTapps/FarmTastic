@@ -1,5 +1,5 @@
 import { createContext, useState, useContext, useEffect } from "react";
-import api from "../services/api";
+import api, { setAuthToken } from "../services/api";
 import { jwtDecode } from "jwt-decode";
 
 console.log("Initializing AuthContext...");
@@ -23,47 +23,22 @@ export const AuthProvider = ({ children }) => {
   const [currentUser, setCurrentUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [token, setToken] = useState(null); // Store token in state
 
   // Check if token exists and is valid on initial load
   useEffect(() => {
     console.log("AuthProvider - Checking for existing token");
     const checkAuth = async () => {
       try {
-        const token = localStorage.getItem("token");
+        // We no longer check localStorage for tokens
+        // Instead, we'll rely on the token state being empty on page refresh
 
-        if (!token) {
-          console.log("AuthProvider - No token found");
-          setLoading(false);
-          return;
-        }
-
-        // Check if token is expired
-        try {
-          const decoded = jwtDecode(token);
-          const currentTime = Date.now() / 1000;
-
-          if (decoded.exp < currentTime) {
-            console.log("AuthProvider - Token expired");
-            localStorage.removeItem("token");
-            localStorage.removeItem("refreshing"); // Clear refreshing flag
-            setCurrentUser(null);
-            setLoading(false);
-            return;
-          }
-
-          // Token is valid, set the authorization header
-          api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
-
-          // Get user data
-          const response = await api.get("/auth/me");
-          setCurrentUser(response.data.data);
-          console.log("AuthProvider - User authenticated:", response.data.data);
-        } catch (error) {
-          console.error("AuthProvider - Error decoding token:", error);
-          localStorage.removeItem("token");
-          localStorage.removeItem("refreshing"); // Clear refreshing flag
-          setCurrentUser(null);
-        }
+        // Since we're not storing tokens in localStorage, there's no token on page refresh
+        console.log(
+          "AuthProvider - No persistent token storage, user will need to login again"
+        );
+        setLoading(false);
+        return;
       } catch (error) {
         console.error("AuthProvider - Error checking auth:", error);
         setError("Authentication error. Please try again.");
@@ -106,20 +81,20 @@ export const AuthProvider = ({ children }) => {
       }
 
       // Extract token and user from response, handling different possible structures
-      let token = null;
+      let newToken = null;
       let user = null;
 
       if (response.data.token) {
-        token = response.data.token;
+        newToken = response.data.token;
         console.log("AuthProvider - Found token at response.data.token");
       } else if (response.data.accessToken) {
-        token = response.data.accessToken;
+        newToken = response.data.accessToken;
         console.log("AuthProvider - Found token at response.data.accessToken");
       } else if (response.data.data && response.data.data.token) {
-        token = response.data.data.token;
+        newToken = response.data.data.token;
         console.log("AuthProvider - Found token at response.data.data.token");
       } else if (response.data.data && response.data.data.accessToken) {
-        token = response.data.data.accessToken;
+        newToken = response.data.data.accessToken;
         console.log(
           "AuthProvider - Found token at response.data.data.accessToken"
         );
@@ -133,32 +108,18 @@ export const AuthProvider = ({ children }) => {
         console.log("AuthProvider - Found user at response.data.data.user");
       }
 
-      if (!token) {
+      if (!newToken) {
         console.error("AuthProvider - No token found in response");
         throw new Error("No authentication token received");
       }
 
-      // Save token to localStorage
-      localStorage.setItem("token", token);
-      console.log("AuthProvider - Token saved to localStorage");
+      // Store token in state
+      setToken(newToken);
+      console.log("AuthProvider - Token saved to state");
 
-      // Set authorization header
-      api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+      // Set authorization header using the imported function
+      setAuthToken(newToken);
       console.log("AuthProvider - Authorization header set");
-
-      // Import and use setAuthToken if available
-      try {
-        const { setAuthToken } = await import("../services/api");
-        if (typeof setAuthToken === "function") {
-          setAuthToken(token);
-          console.log("AuthProvider - Called setAuthToken function");
-        }
-      } catch (importError) {
-        console.warn(
-          "AuthProvider - Could not import setAuthToken:",
-          importError
-        );
-      }
 
       // Set user data
       if (user) {
@@ -225,20 +186,20 @@ export const AuthProvider = ({ children }) => {
       console.log("AuthProvider - Registration response:", response.data);
 
       // Extract token and user from response, handling different possible structures
-      let token = null;
+      let newToken = null;
       let user = null;
 
       if (response.data.token) {
-        token = response.data.token;
+        newToken = response.data.token;
         console.log("AuthProvider - Found token at response.data.token");
       } else if (response.data.accessToken) {
-        token = response.data.accessToken;
+        newToken = response.data.accessToken;
         console.log("AuthProvider - Found token at response.data.accessToken");
       } else if (response.data.data && response.data.data.token) {
-        token = response.data.data.token;
+        newToken = response.data.data.token;
         console.log("AuthProvider - Found token at response.data.data.token");
       } else if (response.data.data && response.data.data.accessToken) {
-        token = response.data.data.accessToken;
+        newToken = response.data.data.accessToken;
         console.log(
           "AuthProvider - Found token at response.data.data.accessToken"
         );
@@ -252,17 +213,17 @@ export const AuthProvider = ({ children }) => {
         console.log("AuthProvider - Found user at response.data.data.user");
       }
 
-      if (!token) {
+      if (!newToken) {
         console.error("AuthProvider - No token found in registration response");
         throw new Error("No authentication token received");
       }
 
-      // Save token to localStorage
-      localStorage.setItem("token", token);
-      console.log("AuthProvider - Token saved to localStorage");
+      // Store token in state
+      setToken(newToken);
+      console.log("AuthProvider - Token saved to state");
 
-      // Set authorization header
-      api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+      // Set authorization header using the imported function
+      setAuthToken(newToken);
       console.log("AuthProvider - Authorization header set");
 
       // Set user data
@@ -291,11 +252,11 @@ export const AuthProvider = ({ children }) => {
     try {
       console.log("AuthProvider - Logging out");
 
-      // Remove token from localStorage
-      localStorage.removeItem("token");
+      // Clear token from state
+      setToken(null);
 
       // Remove authorization header
-      delete api.defaults.headers.common["Authorization"];
+      setAuthToken(null);
 
       // Clear user data
       setCurrentUser(null);
