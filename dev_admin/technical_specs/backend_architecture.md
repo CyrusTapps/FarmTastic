@@ -29,6 +29,9 @@ server/
 │ ├── jwtUtils.js
 │ └── errorUtils.js
 └── server.js # Main application entry point
+└── .env //for local development
+└── .env.production //for production
+└── vercel.json
 
 ## Key Components
 

@@ -118,11 +118,13 @@ animalSchema.pre("save", function (next) {
 animalSchema.methods.calculateCurrentHealth = function () {
   const now = new Date();
 
-  // Calculate hours since last fed
-  const hoursSinceLastFed = (now - this.lastFed) / (1000 * 60 * 60);
+  // Calculate hours since last fed - convert dates to numbers for calculation
+  const hoursSinceLastFed =
+    (now.getTime() - new Date(this.lastFed).getTime()) / (1000 * 60 * 60);
 
-  // Calculate hours since last watered
-  const hoursSinceLastWatered = (now - this.lastWatered) / (1000 * 60 * 60);
+  // Calculate hours since last watered - convert dates to numbers for calculation
+  const hoursSinceLastWatered =
+    (now.getTime() - new Date(this.lastWatered).getTime()) / (1000 * 60 * 60);
 
   // Health decreases by 5 points for every 24 hours not fed
   const feedingHealthDecrease = Math.floor(hoursSinceLastFed / 24) * 5;

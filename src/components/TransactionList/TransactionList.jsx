@@ -12,10 +12,9 @@ const TransactionList = ({ limit, showViewAll = true, filter = "all" }) => {
       try {
         setLoading(true);
         setError(null);
-        const data = await getTransactions(
-          limit,
-          filter !== "all" ? filter : null
-        );
+        console.log("TransactionList - Fetching with filter:", filter);
+
+        const data = await getTransactions(limit, filter);
 
         // Extract the transactions from the nested data structure
         const transactionData = data.data || [];

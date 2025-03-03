@@ -9,21 +9,9 @@ export const getTransactions = async (limit = null, filter = null) => {
       params.limit = limit;
     }
 
-    // Handle different filter types more explicitly
+    // Pass the filter directly if it's not "all"
     if (filter && filter !== "all") {
-      // Check if it's a transaction type filter (buy/sell)
-      if (
-        filter === "buy" ||
-        filter === "sell" ||
-        filter === "vet" ||
-        filter === "use"
-      ) {
-        params.type = filter;
-      }
-      // Check if it's an item type filter (animal/inventory)
-      else if (filter === "animal" || filter === "inventory") {
-        params.itemType = filter;
-      }
+      params.filter = filter;
     }
 
     console.log("Fetching transactions with params:", params);

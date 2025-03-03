@@ -63,3 +63,5 @@ typings/
 .eslintcache
 .stylelintcache
 .node_repl_history
+dev_admin
+dev_admin/*

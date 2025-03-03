@@ -240,9 +240,13 @@ const Market = () => {
   };
 
   const handlePurchase = async (item) => {
+    // Calculate the total price based on quantity for inventory items
+    const totalPrice =
+      activeCategory === "animals" ? item.price : item.price * item.quantity;
+
     // Check if user has enough currency
-    if (currentUser.currency < item.price) {
-      setPurchaseMessage(`Not enough coins! You need ${item.price} coins.`);
+    if (currentUser.currency < totalPrice) {
+      setPurchaseMessage(`Not enough coins! You need ${totalPrice} coins.`);
       setPurchaseStatus("error");
       setTimeout(() => {
         setPurchaseMessage(null);
@@ -283,11 +287,17 @@ const Market = () => {
       }
 
       // Update user currency with the value returned from the server
-      if (response.user && response.user.currency !== undefined) {
+      if (
+        response.data &&
+        response.data.user &&
+        response.data.user.currency !== undefined
+      ) {
+        updateUser({ ...currentUser, currency: response.data.user.currency });
+      } else if (response.user && response.user.currency !== undefined) {
         updateUser({ ...currentUser, currency: response.user.currency });
       } else {
         // Fallback to client-side calculation if server doesn't return updated user
-        const newCurrency = currentUser.currency - item.price;
+        const newCurrency = currentUser.currency - totalPrice;
         updateUser({ ...currentUser, currency: newCurrency });
       }
 
@@ -300,30 +310,15 @@ const Market = () => {
 
       triggerRefresh(); // Trigger refresh after purchase
     } catch (error) {
-      console.error(`Error buying ${item.type}:`, error);
-
-      // Check if it's an authentication error
-      if (error.response && error.response.status === 401) {
-        setPurchaseMessage("Your session has expired. Please log in again.");
-        setPurchaseStatus("error");
-        setTimeout(() => {
-          logout();
-          navigate("/login");
-        }, 3000);
-      } else {
-        // Show more detailed error message if available
-        const errorMessage =
-          error.response && error.response.data && error.response.data.error
-            ? error.response.data.error
-            : "Failed to purchase item. Please try again.";
-
-        setPurchaseMessage(errorMessage);
-        setPurchaseStatus("error");
-        setTimeout(() => {
-          setPurchaseMessage(null);
-          setPurchaseStatus("");
-        }, 3000);
-      }
+      console.error("Purchase error:", error);
+      setPurchaseMessage(
+        error.response?.data?.error || "Failed to complete purchase."
+      );
+      setPurchaseStatus("error");
+      setTimeout(() => {
+        setPurchaseMessage(null);
+        setPurchaseStatus("");
+      }, 3000);
     } finally {
       setLoading(false);
     }
