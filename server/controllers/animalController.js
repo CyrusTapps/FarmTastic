@@ -12,12 +12,16 @@ exports.getAnimals = async (req, res) => {
     const animals = await Animal.find({ userId: req.user.id });
     console.log("Found animals:", animals.length);
 
+    // Use a single reference time for all calculations in this request
+    const referenceTime = new Date();
+
     // Calculate and update current health for each animal
     const updatedAnimals = [];
     const deadAnimals = [];
 
     for (const animal of animals) {
-      const currentHealth = animal.calculateCurrentHealth();
+      // Calculate health using the reference time
+      const currentHealth = animal.calculateCurrentHealth(referenceTime);
       console.log(
         `Animal ${animal._id} (${animal.type}): health = ${currentHealth}`
       );
@@ -36,6 +40,8 @@ exports.getAnimals = async (req, res) => {
       // Update the stored health if it has changed
       if (currentHealth !== animal.health) {
         animal.health = currentHealth;
+        // Also store the last calculation time
+        animal.lastHealthCalculation = referenceTime;
         await animal.save();
       }
 

@@ -12,7 +12,7 @@ const animalSchema = new mongoose.Schema(
     name: {
       type: String,
       trim: true,
-      // Name is optional for livestock (like cows, pigs)
+      // Name is optional for livestock (like cows, pigs) - TODO: change to allow dialoge box for all animals with a button that sets name, or skip
       // but required for pets (like dogs, cats)
     },
     type: {
@@ -115,22 +115,26 @@ animalSchema.pre("save", function (next) {
 });
 
 // Method to calculate current health based on time since last care
-animalSchema.methods.calculateCurrentHealth = function () {
-  const now = new Date();
+animalSchema.methods.calculateCurrentHealth = function (
+  referenceTime = new Date()
+) {
+  // Use the provided reference time instead of creating a new Date()
 
   // Calculate hours since last fed - convert dates to numbers for calculation
   const hoursSinceLastFed =
-    (now.getTime() - new Date(this.lastFed).getTime()) / (1000 * 60 * 60);
+    (referenceTime.getTime() - new Date(this.lastFed).getTime()) /
+    (1000 * 60 * 60);
 
   // Calculate hours since last watered - convert dates to numbers for calculation
   const hoursSinceLastWatered =
-    (now.getTime() - new Date(this.lastWatered).getTime()) / (1000 * 60 * 60);
+    (referenceTime.getTime() - new Date(this.lastWatered).getTime()) /
+    (1000 * 60 * 60);
 
-  // Health decreases by 5 points for every 24 hours not fed
-  const feedingHealthDecrease = Math.floor(hoursSinceLastFed / 24) * 5;
+  // Health decreases gradually - 5 points per 24 hours not fed
+  const feedingHealthDecrease = Math.floor((hoursSinceLastFed / 24) * 5);
 
-  // Health decreases by 10 points for every 24 hours not watered
-  const wateringHealthDecrease = Math.floor(hoursSinceLastWatered / 24) * 10;
+  // Health decreases gradually - 10 points per 24 hours not watered
+  const wateringHealthDecrease = Math.floor((hoursSinceLastWatered / 24) * 10);
 
   // Calculate new health
   let newHealth = this.health - feedingHealthDecrease - wateringHealthDecrease;
