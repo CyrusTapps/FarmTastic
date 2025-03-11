@@ -28,27 +28,29 @@
   z-index: 2;
   text-align: center;
   color: white;
-  padding: 20px;
+  padding: 5vmin;
+  width: 90%;
+  max-width: 600px;
 }
 
 .logo {
-  margin-bottom: 40px;
+  margin-bottom: clamp(20px, 5vmin, 40px);
   animation: fadeIn 1s ease-in-out;
 }
 
 .logo-letter {
-  font-size: 80px;
+  font-size: clamp(40px, 10vw, 80px);
   font-weight: bold;
   color: var(--color-green, #4caf50);
   background-color: white;
-  border-radius: 12px;
-  padding: 5px 15px;
-  margin-right: 5px;
+  border-radius: clamp(6px, 1.5vw, 12px);
+  padding: clamp(3px, 0.8vw, 5px) clamp(8px, 2vw, 15px);
+  margin-right: clamp(3px, 0.8vw, 5px);
   display: inline-block;
 }
 
 .logo-text {
-  font-size: 50px;
+  font-size: clamp(30px, 7vw, 50px);
   font-weight: bold;
   display: inline-block;
 }
@@ -60,32 +62,34 @@
 }
 
 .loading-spinner {
-  width: 50px;
-  height: 50px;
-  border: 5px solid rgba(255, 255, 255, 0.3);
+  width: clamp(30px, 8vw, 50px);
+  height: clamp(30px, 8vw, 50px);
+  border: clamp(3px, 0.8vw, 5px) solid rgba(255, 255, 255, 0.3);
   border-radius: 50%;
   border-top-color: white;
   animation: spin 1s ease-in-out infinite;
-  margin-bottom: 20px;
+  margin-bottom: clamp(10px, 3vmin, 20px);
 }
 
 .loading-text {
-  font-size: 18px;
+  font-size: clamp(14px, 4vw, 18px);
   margin: 0;
   animation: pulse 1.5s infinite;
 }
 
 .error-text {
   color: #ffcccc;
-  margin-top: 10px;
-  font-size: 16px;
-  max-width: 300px;
+  margin-top: clamp(6px, 1.5vmin, 10px);
+  font-size: clamp(12px, 3.5vw, 16px);
+  max-width: 90%;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 /* Copyright and version styles */
 .copyright-container {
   position: absolute;
-  bottom: 20px;
+  bottom: clamp(10px, 3vmin, 20px);
   left: 0;
   right: 0;
   text-align: center;
@@ -95,13 +99,13 @@
 
 .copyright-text {
   color: rgba(255, 255, 255, 0.8);
-  font-size: 14px;
-  margin: 0 0 5px 0;
+  font-size: clamp(10px, 3vw, 14px);
+  margin: 0 0 clamp(3px, 0.8vmin, 5px) 0;
 }
 
 .version-text {
   color: rgba(255, 255, 255, 0.6);
-  font-size: 12px;
+  font-size: clamp(8px, 2.5vw, 12px);
   margin: 0;
 }
 
@@ -135,8 +139,8 @@
 }
 
 .countdown {
-  font-size: 24px;
+  font-size: clamp(16px, 5vw, 24px);
   font-weight: bold;
-  margin-top: 15px;
+  margin-top: clamp(8px, 2vmin, 15px);
   color: white;
 }

@@ -15,37 +15,26 @@ exports.getAnimals = async (req, res) => {
     // Use a single reference time for all calculations in this request
     const referenceTime = new Date();
 
-    // Calculate and update current health for each animal
-    const updatedAnimals = [];
+    // Process each animal independently
+    const processedAnimals = [];
     const deadAnimals = [];
 
     for (const animal of animals) {
-      // Calculate health using the reference time
-      const currentHealth = animal.calculateCurrentHealth(referenceTime);
-      console.log(
-        `Animal ${animal._id} (${animal.type}): health = ${currentHealth}`
-      );
+      // Update health based on time since THIS animal's last update
+      await animal.updateHealth(referenceTime);
 
       // Check if animal has died (0% health)
-      if (currentHealth <= 0) {
+      if (animal.health <= 0) {
         console.log(`Animal ${animal._id} (${animal.type}) is dead`);
         deadAnimals.push({
           _id: animal._id,
           name: animal.name || animal.type,
           type: animal.type,
         });
-        continue; // Skip adding to updatedAnimals
+        continue; // Skip adding to processedAnimals
       }
 
-      // Update the stored health if it has changed
-      if (currentHealth !== animal.health) {
-        animal.health = currentHealth;
-        // Also store the last calculation time
-        animal.lastHealthCalculation = referenceTime;
-        await animal.save();
-      }
-
-      updatedAnimals.push(animal.toObject ? animal.toObject() : animal);
+      processedAnimals.push(animal.toObject ? animal.toObject() : animal);
     }
 
     // Process any newly dead animals
@@ -87,19 +76,19 @@ exports.getAnimals = async (req, res) => {
 
     // Return response with animals and any death transactions
     console.log(
-      `Returning ${updatedAnimals.length} live animals and ${deathTransactions.length} death transactions`
+      `Returning ${processedAnimals.length} live animals and ${deathTransactions.length} death transactions`
     );
     return res.status(200).json({
       success: true,
-      count: updatedAnimals.length,
-      data: updatedAnimals,
+      count: processedAnimals.length,
+      data: processedAnimals,
       deadAnimals: deathTransactions.length > 0 ? deathTransactions : undefined,
     });
   } catch (error) {
     console.error("Error getting animals:", error);
     res.status(500).json({
       success: false,
-      error: "Server error",
+      error: error.message || "Server error",
     });
   }
 };
@@ -119,52 +108,47 @@ exports.getAnimal = async (req, res) => {
       });
     }
 
-    // Calculate current health
-    const currentHealth = animal.calculateCurrentHealth();
+    // Update only this animal's health
+    await animal.updateHealth(new Date());
 
     // Check if animal has died (0% health)
-    if (currentHealth <= 0) {
-      // Delete the animal
-      await Animal.deleteOne({ _id: animal._id });
-
+    if (animal.health <= 0) {
       // Create a transaction record for the dead animal
       await Transaction.create({
         userId: req.user.id,
-        type: "loss",
+        type: "sell",
         itemType: "animal",
         itemId: animal._id,
+        itemName: animal.name || animal.type,
         amount: 0,
         quantity: 1,
-        description: "Animal died due to neglect",
+        description: `${animal.name || animal.type} died due to neglect`,
       });
 
-      return res.status(410).json({
-        success: false,
-        error: "This animal has died due to neglect",
-        animalDied: true,
+      // Delete the animal
+      await Animal.deleteOne({ _id: animal._id });
+
+      return res.status(200).json({
+        success: true,
+        data: null,
+        message: `${animal.name || animal.type} has died due to neglect`,
       });
     }
 
-    // Update the stored health if it has changed
-    if (currentHealth !== animal.health) {
-      animal.health = currentHealth;
-      await animal.save();
-    }
+    // Calculate additional fields for the UI
+    const animalData = animal.toObject ? animal.toObject() : animal;
+    animalData.marketValue = animal.marketValue;
+    animalData.ageInDays = animal.ageInDays;
 
     res.status(200).json({
       success: true,
-      data: {
-        ...animal._doc,
-        currentHealth,
-        marketValue: animal.marketValue,
-        ageInDays: animal.ageInDays,
-      },
+      data: animalData,
     });
   } catch (error) {
     console.error("Error getting animal:", error);
     res.status(500).json({
       success: false,
-      error: "Server error",
+      error: error.message || "Server error",
     });
   }
 };
@@ -317,6 +301,9 @@ exports.feedAnimal = async (req, res) => {
       });
     }
 
+    // First update health to account for any decreases since last update
+    await animal.updateHealth(new Date());
+
     // Calculate health boost based on food type
     let healthBoost = 0;
     if (foodType === "premium_feed") {
@@ -331,6 +318,15 @@ exports.feedAnimal = async (req, res) => {
     animal.lastFed = new Date();
     animal.health = Math.min(100, animal.health + healthBoost);
     animal.lastCaredAt = new Date();
+
+    // Add to health history
+    animal.healthHistory = animal.healthHistory || [];
+    animal.healthHistory.push({
+      type: "feed",
+      amount: healthBoost,
+      timestamp: new Date(),
+    });
+
     await animal.save();
 
     // Consume food from inventory
@@ -357,7 +353,6 @@ exports.feedAnimal = async (req, res) => {
 
     // Calculate additional fields for the UI
     const animalData = animal.toObject ? animal.toObject() : animal;
-    animalData.currentHealth = animal.calculateCurrentHealth();
     animalData.marketValue = animal.marketValue;
     animalData.ageInDays = animal.ageInDays;
 
@@ -408,10 +403,23 @@ exports.waterAnimal = async (req, res) => {
       });
     }
 
+    // First update health to account for any decreases since last update
+    await animal.updateHealth(new Date());
+
     // Update animal
     animal.lastWatered = new Date();
-    animal.health = Math.min(100, animal.health + 5);
+    const healthBoost = 5;
+    animal.health = Math.min(100, animal.health + healthBoost);
     animal.lastCaredAt = new Date();
+
+    // Add to health history
+    animal.healthHistory = animal.healthHistory || [];
+    animal.healthHistory.push({
+      type: "water",
+      amount: healthBoost,
+      timestamp: new Date(),
+    });
+
     await animal.save();
 
     // Consume water from inventory
@@ -438,7 +446,6 @@ exports.waterAnimal = async (req, res) => {
 
     // Calculate additional fields for the UI
     const animalData = animal.toObject ? animal.toObject() : animal;
-    animalData.currentHealth = animal.calculateCurrentHealth();
     animalData.marketValue = animal.marketValue;
     animalData.ageInDays = animal.ageInDays;
 
@@ -499,21 +506,39 @@ exports.callVet = async (req, res) => {
       });
     }
 
+    // First update health to account for any decreases since last update
+    await animal.updateHealth(new Date());
+
     // Deduct currency from user
     user.currency -= vetCost;
     await user.save();
 
-    // Call vet for animal
-    await animal.callVet();
+    // Calculate the boost needed to reach 100%
+    const healthBoost = 100 - animal.health;
+
+    // Update animal health to 100%
+    animal.health = 100;
+    animal.lastCaredAt = new Date();
+
+    // Add to health history if there was a boost
+    if (healthBoost > 0) {
+      animal.healthHistory = animal.healthHistory || [];
+      animal.healthHistory.push({
+        type: "vet",
+        amount: healthBoost,
+        timestamp: new Date(),
+      });
+    }
+
+    await animal.save();
 
     // Calculate additional fields for the UI
     const animalData = animal.toObject ? animal.toObject() : animal;
-    animalData.currentHealth = animal.calculateCurrentHealth();
     animalData.marketValue = animal.marketValue;
     animalData.ageInDays = animal.ageInDays;
 
     console.log("Sending animal data after vet visit:", {
-      currentHealth: animalData.currentHealth,
+      health: animalData.health,
       marketValue: animalData.marketValue,
       ageInDays: animalData.ageInDays,
     });
@@ -564,6 +589,9 @@ exports.sellAnimal = async (req, res) => {
         error: "Animal not found",
       });
     }
+
+    // Update health before calculating sale value
+    await animal.updateHealth(new Date());
 
     // Calculate the sale value
     const saleValue = animal.marketValue;
@@ -646,26 +674,31 @@ exports.giveMedicine = async (req, res) => {
       });
     }
 
-    // Apply medicine effects based on type
+    // First update health to account for any decreases since last update
+    await animal.updateHealth(new Date());
+
+    // Calculate health boost based on medicine type
     let healthBoost = 0;
-    switch (medicineItem.type) {
-      case "basic_medicine":
-        healthBoost = 20;
-        break;
-      case "medicine": // General Medicine
-        healthBoost = 30;
-        break;
-      case "advanced_medicine":
-        healthBoost = 40;
-        break;
-      default:
-        healthBoost = 15;
+    if (medicineItem.type === "advanced_medicine") {
+      healthBoost = 30;
+    } else if (medicineItem.type === "basic_medicine") {
+      healthBoost = 20;
+    } else {
+      healthBoost = 25; // Regular medicine
     }
 
     // Update animal
     animal.health = Math.min(100, animal.health + healthBoost);
-    animal.isSick = false; // Cure any sickness
     animal.lastCaredAt = new Date();
+
+    // Add to health history
+    animal.healthHistory = animal.healthHistory || [];
+    animal.healthHistory.push({
+      type: "medicine",
+      amount: healthBoost,
+      timestamp: new Date(),
+    });
+
     await animal.save();
 
     // Consume medicine from inventory
@@ -687,12 +720,11 @@ exports.giveMedicine = async (req, res) => {
       itemName: medicineItem.name,
       amount: 0, // No currency change
       quantity: 1,
-      description: `Used ${medicineItem.name} on ${animal.name || animal.type}`,
+      description: `Gave ${medicineItem.name} to ${animal.name || animal.type}`,
     });
 
     // Calculate additional fields for the UI
     const animalData = animal.toObject ? animal.toObject() : animal;
-    animalData.currentHealth = animal.calculateCurrentHealth();
     animalData.marketValue = animal.marketValue;
     animalData.ageInDays = animal.ageInDays;
 
@@ -704,7 +736,7 @@ exports.giveMedicine = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Error giving medicine to animal:", error);
+    console.error("Error giving medicine:", error);
     res.status(500).json({
       success: false,
       error: error.message || "Server error",

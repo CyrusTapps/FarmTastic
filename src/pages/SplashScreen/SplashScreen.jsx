@@ -4,7 +4,7 @@ const SplashScreen = () => {
   console.log("🚀 SplashScreen - Component rendering");
 
   // You can update this version number as needed
-  const appVersion = "v1.0.0";
+  const appVersion = "v1.0.1";
   const currentYear = new Date().getFullYear();
 
   return (

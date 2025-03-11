@@ -93,6 +93,31 @@ const animalSchema = new mongoose.Schema(
         return defaultValues[this.type] || 300;
       },
     },
+    // New field to track when health was last calculated
+    lastHealthUpdate: {
+      type: Date,
+      default: Date.now,
+    },
+
+    // Track history of health changes
+    healthHistory: [
+      {
+        type: {
+          type: String,
+          enum: ["decrease", "feed", "water", "medicine", "treat", "vet"],
+          required: true,
+        },
+        amount: {
+          type: Number,
+          required: true,
+        },
+        timestamp: {
+          type: Date,
+          default: Date.now,
+        },
+        reason: String,
+      },
+    ],
   },
   {
     timestamps: true,
@@ -114,65 +139,144 @@ animalSchema.pre("save", function (next) {
   next();
 });
 
-// Method to calculate current health based on time since last care
-animalSchema.methods.calculateCurrentHealth = function (
+// Method to calculate and update health based on time since last update
+animalSchema.methods.updateHealth = async function (
   referenceTime = new Date()
 ) {
-  // Use the provided reference time instead of creating a new Date()
+  // Initialize healthHistory if it doesn't exist (for migration)
+  this.healthHistory = this.healthHistory || [];
 
-  // Calculate hours since last fed - convert dates to numbers for calculation
+  // Only calculate health decrease since THIS animal's last update
+  const lastUpdate =
+    this.lastHealthUpdate || this.lastCaredAt || this.createdAt;
+  const hoursSinceLastUpdate =
+    (referenceTime.getTime() - new Date(lastUpdate).getTime()) /
+    (1000 * 60 * 60);
+
+  // Skip if less than 1 hour has passed
+  if (hoursSinceLastUpdate < 1) {
+    return this.health;
+  }
+
+  // Calculate health decrease since last update for THIS animal
   const hoursSinceLastFed =
     (referenceTime.getTime() - new Date(this.lastFed).getTime()) /
     (1000 * 60 * 60);
-
-  // Calculate hours since last watered - convert dates to numbers for calculation
   const hoursSinceLastWatered =
     (referenceTime.getTime() - new Date(this.lastWatered).getTime()) /
     (1000 * 60 * 60);
 
-  // Health decreases gradually - 5 points per 24 hours not fed
-  const feedingHealthDecrease = Math.floor((hoursSinceLastFed / 24) * 5);
+  // Calculate hourly decrease rates
+  const feedingDecreasePerHour = 5 / 24; // 5 points per 24 hours
+  const wateringDecreasePerHour = 10 / 24; // 10 points per 24 hours
 
-  // Health decreases gradually - 10 points per 24 hours not watered
-  const wateringHealthDecrease = Math.floor((hoursSinceLastWatered / 24) * 10);
+  // Calculate decrease for hours since last update
+  const feedingDecrease = feedingDecreasePerHour * hoursSinceLastUpdate;
+  const wateringDecrease = wateringDecreasePerHour * hoursSinceLastUpdate;
 
-  // Calculate new health
-  let newHealth = this.health - feedingHealthDecrease - wateringHealthDecrease;
+  const totalDecrease = Math.floor(feedingDecrease + wateringDecrease);
 
-  // Ensure health doesn't go below 0
-  newHealth = Math.max(0, newHealth);
+  if (totalDecrease > 0) {
+    // Add to health history
+    this.healthHistory.push({
+      type: "decrease",
+      amount: -totalDecrease,
+      timestamp: referenceTime,
+      reason: `${Math.round(hoursSinceLastFed)} hours unfed, ${Math.round(
+        hoursSinceLastWatered
+      )} hours unwatered`,
+    });
 
-  return newHealth;
+    // Update health
+    this.health = Math.max(0, this.health - totalDecrease);
+  }
+
+  // Always update the lastHealthUpdate timestamp
+  this.lastHealthUpdate = referenceTime;
+  await this.save();
+
+  return this.health;
 };
 
-// Method to feed the animal
-animalSchema.methods.feed = function () {
+// Update the feed method
+animalSchema.methods.feed = async function () {
+  // First update health to account for any decreases since last update
+  await this.updateHealth(new Date());
+
+  // Now apply the feeding effects
   this.lastFed = new Date();
   this.lastCaredAt = new Date();
 
-  // Increase health by 10 points when fed, but not above 100
-  this.health = Math.min(100, this.health + 10);
+  // Add health boost
+  const boostAmount = 10;
+  this.healthHistory.push({
+    type: "feed",
+    amount: boostAmount,
+    timestamp: new Date(),
+  });
 
-  return this.save();
+  // Update health
+  this.health = Math.min(100, this.health + boostAmount);
+  await this.save();
+
+  return this;
 };
 
-// Method to water the animal
-animalSchema.methods.water = function () {
+// Update the water method
+animalSchema.methods.water = async function () {
+  // First update health to account for any decreases since last update
+  await this.updateHealth(new Date());
+
+  // Now apply the watering effects
   this.lastWatered = new Date();
   this.lastCaredAt = new Date();
 
-  // Increase health by 15 points when watered, but not above 100
-  this.health = Math.min(100, this.health + 15);
+  // Add health boost
+  const boostAmount = 15;
+  this.healthHistory.push({
+    type: "water",
+    amount: boostAmount,
+    timestamp: new Date(),
+  });
 
-  return this.save();
+  // Update health
+  this.health = Math.min(100, this.health + boostAmount);
+  await this.save();
+
+  return this;
 };
 
-// Method to call vet (restore health to 100%)
-animalSchema.methods.callVet = function () {
+// Update the callVet method
+animalSchema.methods.callVet = async function () {
+  // First update health to account for any decreases since last update
+  await this.updateHealth(new Date());
+
+  // Calculate the boost needed to reach 100%
+  const boostAmount = 100 - this.health;
+
+  if (boostAmount > 0) {
+    this.healthHistory.push({
+      type: "vet",
+      amount: boostAmount,
+      timestamp: new Date(),
+    });
+  }
+
   this.health = 100;
   this.lastCaredAt = new Date();
+  await this.save();
 
-  return this.save();
+  return this;
+};
+
+// Keep the existing calculateCurrentHealth method for backward compatibility
+// but modify it to use updateHealth internally
+animalSchema.methods.calculateCurrentHealth = function (
+  referenceTime = new Date()
+) {
+  // This is now just a wrapper that returns the current health
+  // The actual calculation happens in updateHealth
+  return this.health;
 };
 
 // Virtual for age in days
