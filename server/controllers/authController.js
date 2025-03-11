@@ -112,6 +112,11 @@ exports.login = async (req, res, next) => {
 
     console.log("Password matched successfully");
 
+    // Update lastLogin time
+    user.lastLogin = new Date();
+    await user.save();
+    console.log("Updated user's lastLogin timestamp");
+
     // Send token response
     console.log("Generating tokens and sending response...");
     sendTokenResponse(user, 200, res);
